@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>React Build Test</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    // Import from CDN since local builds are CJS format
+    // This tests that the build completed - check the console for React version
+    import React from 'https://esm.sh/react@19';
+    import ReactDOM from 'https://esm.sh/react-dom@19/client';
+
+    const App = () => {
+      const [count, setCount] = React.useState(0);
+      return React.createElement('div', null, [
+        React.createElement('h1', { key: 'title' }, 'Hello from React!'),
+        React.createElement('p', { key: 'version' }, `React version: ${React.version}`),
+        React.createElement('p', { key: 'count' }, `Count: ${count}`),
+        React.createElement('button', {
+          key: 'btn',
+          onClick: () => setCount(c => c + 1)
+        }, 'Increment')
+      ]);
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>

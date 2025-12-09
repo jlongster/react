@@ -938,7 +938,8 @@ export function commitTextUpdate(
   oldText: string,
   newText: string,
 ): void {
-  textInstance.nodeValue = newText;
+  // [NOOP BUILD] DOM mutations disabled
+  // textInstance.nodeValue = newText;
 }
 
 const supportsMoveBefore =
@@ -951,12 +952,13 @@ export function appendChild(
   parentInstance: Instance,
   child: Instance | TextInstance,
 ): void {
-  if (supportsMoveBefore && child.parentNode !== null) {
-    // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
-    parentInstance.moveBefore(child, null);
-  } else {
-    parentInstance.appendChild(child);
-  }
+  // [NOOP BUILD] DOM mutations disabled
+  // if (supportsMoveBefore && child.parentNode !== null) {
+  //   // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
+  //   parentInstance.moveBefore(child, null);
+  // } else {
+  //   parentInstance.appendChild(child);
+  // }
 }
 
 function warnForReactChildrenConflict(container: Container): void {
@@ -1054,12 +1056,13 @@ export function insertBefore(
   child: Instance | TextInstance,
   beforeChild: Instance | TextInstance | SuspenseInstance | ActivityInstance,
 ): void {
-  if (supportsMoveBefore && child.parentNode !== null) {
-    // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
-    parentInstance.moveBefore(child, beforeChild);
-  } else {
-    parentInstance.insertBefore(child, beforeChild);
-  }
+  // [NOOP BUILD] DOM mutations disabled
+  // if (supportsMoveBefore && child.parentNode !== null) {
+  //   // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
+  //   parentInstance.moveBefore(child, beforeChild);
+  // } else {
+  //   parentInstance.insertBefore(child, beforeChild);
+  // }
 }
 
 export function insertInContainerBefore(
@@ -1067,28 +1070,29 @@ export function insertInContainerBefore(
   child: Instance | TextInstance,
   beforeChild: Instance | TextInstance | SuspenseInstance | ActivityInstance,
 ): void {
-  if (__DEV__) {
-    warnForReactChildrenConflict(container);
-  }
-  let parentNode: DocumentFragment | Element;
-  if (container.nodeType === DOCUMENT_NODE) {
-    parentNode = (container: any).body;
-  } else if (
-    !disableCommentsAsDOMContainers &&
-    container.nodeType === COMMENT_NODE
-  ) {
-    parentNode = (container.parentNode: any);
-  } else if (container.nodeName === 'HTML') {
-    parentNode = (container.ownerDocument.body: any);
-  } else {
-    parentNode = (container: any);
-  }
-  if (supportsMoveBefore && child.parentNode !== null) {
-    // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
-    parentNode.moveBefore(child, beforeChild);
-  } else {
-    parentNode.insertBefore(child, beforeChild);
-  }
+  // [NOOP BUILD] DOM mutations disabled
+  // if (__DEV__) {
+  //   warnForReactChildrenConflict(container);
+  // }
+  // let parentNode: DocumentFragment | Element;
+  // if (container.nodeType === DOCUMENT_NODE) {
+  //   parentNode = (container: any).body;
+  // } else if (
+  //   !disableCommentsAsDOMContainers &&
+  //   container.nodeType === COMMENT_NODE
+  // ) {
+  //   parentNode = (container.parentNode: any);
+  // } else if (container.nodeName === 'HTML') {
+  //   parentNode = (container.ownerDocument.body: any);
+  // } else {
+  //   parentNode = (container: any);
+  // }
+  // if (supportsMoveBefore && child.parentNode !== null) {
+  //   // $FlowFixMe[prop-missing]: We've checked this with supportsMoveBefore.
+  //   parentNode.moveBefore(child, beforeChild);
+  // } else {
+  //   parentNode.insertBefore(child, beforeChild);
+  // }
 }
 
 export function isSingletonScope(type: string): boolean {
@@ -1131,27 +1135,29 @@ export function removeChild(
   parentInstance: Instance,
   child: Instance | TextInstance | SuspenseInstance | ActivityInstance,
 ): void {
-  parentInstance.removeChild(child);
+  // [NOOP BUILD] DOM mutations disabled
+  // parentInstance.removeChild(child);
 }
 
 export function removeChildFromContainer(
   container: Container,
   child: Instance | TextInstance | SuspenseInstance | ActivityInstance,
 ): void {
-  let parentNode: DocumentFragment | Element;
-  if (container.nodeType === DOCUMENT_NODE) {
-    parentNode = (container: any).body;
-  } else if (
-    !disableCommentsAsDOMContainers &&
-    container.nodeType === COMMENT_NODE
-  ) {
-    parentNode = (container.parentNode: any);
-  } else if (container.nodeName === 'HTML') {
-    parentNode = (container.ownerDocument.body: any);
-  } else {
-    parentNode = (container: any);
-  }
-  parentNode.removeChild(child);
+  // [NOOP BUILD] DOM mutations disabled
+  // let parentNode: DocumentFragment | Element;
+  // if (container.nodeType === DOCUMENT_NODE) {
+  //   parentNode = (container: any).body;
+  // } else if (
+  //   !disableCommentsAsDOMContainers &&
+  //   container.nodeType === COMMENT_NODE
+  // ) {
+  //   parentNode = (container.parentNode: any);
+  // } else if (container.nodeName === 'HTML') {
+  //   parentNode = (container.ownerDocument.body: any);
+  // } else {
+  //   parentNode = (container: any);
+  // }
+  // parentNode.removeChild(child);
 }
 
 function clearHydrationBoundary(
