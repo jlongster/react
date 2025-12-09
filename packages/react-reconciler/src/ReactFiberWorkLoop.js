@@ -93,6 +93,21 @@ import {
   setCurrentTrackFromLanes,
   markAllLanesInOrder,
 } from './ReactFiberPerformanceTrack';
+import {
+  logRenderStart as debugLogRenderStart,
+  logRenderComplete as debugLogRenderComplete,
+  logCommitStart as debugLogCommitStart,
+  logCommitComplete as debugLogCommitComplete,
+  logUpdateScheduled as debugLogUpdateScheduled,
+  logUpdateRenderStart as debugLogUpdateRenderStart,
+  logUpdateInterrupted as debugLogUpdateInterrupted,
+  logUpdateYielded as debugLogUpdateYielded,
+  logUpdateResumed as debugLogUpdateResumed,
+  logUpdateSuspended as debugLogUpdateSuspended,
+  logUpdatePinged as debugLogUpdatePinged,
+  logUpdateCommitted as debugLogUpdateCommitted,
+  logUpdateRestarted as debugLogUpdateRestarted,
+} from './ReactDebugTiming';
 
 import {
   resetAfterCommit,
@@ -918,6 +933,9 @@ export function scheduleUpdateOnFiber(
   fiber: Fiber,
   lane: Lane,
 ) {
+  // Debug: log update scheduled
+  debugLogUpdateScheduled(lane);
+
   if (__DEV__) {
     if (isRunningInsertionEffect) {
       console.error('useInsertionEffect must not schedule updates.');
@@ -1973,6 +1991,8 @@ function prepareFreshStack(root: FiberRoot, lanes: Lanes): Fiber {
           lanes,
           workInProgressUpdateTask,
         );
+        // Debug: log that render was interrupted
+        debugLogUpdateInterrupted(workInProgressRootRenderLanes, lanes);
       }
       finalizeRender(workInProgressRootRenderLanes, renderStartTime);
     }
@@ -2336,6 +2356,9 @@ function handleThrow(root: FiberRoot, thrownValue: any): void {
       }
     }
   }
+
+  // Debug: log suspend event
+  debugLogUpdateSuspended(workInProgressRootRenderLanes, workInProgressSuspendedReason);
 }
 
 export function shouldRemainOnPreviousScreen(): boolean {
@@ -2566,6 +2589,10 @@ function renderRootSync(
     markRenderStarted(lanes);
   }
 
+  // Debug timing: log render start
+  debugLogRenderStart(true); // true = sync render
+  debugLogUpdateRenderStart(lanes);
+
   let didSuspendInShell = false;
   let exitStatus = workInProgressRootExitStatus;
   outer: do {
@@ -2659,6 +2686,9 @@ function renderRootSync(
     markRenderStopped();
   }
 
+  // Debug timing: log render complete
+  debugLogRenderComplete();
+
   if (workInProgress !== null) {
     // Did not complete the tree. This can happen if something suspended in
     // the shell.
@@ -2720,11 +2750,17 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {
     // If we were previously in prerendering mode, check if we received any new
     // data during an interleaved event.
     workInProgressRootIsPrerendering = checkIfRootIsPrerendering(root, lanes);
+    // Debug: log that update is resuming
+    debugLogUpdateResumed(lanes);
   }
 
   if (enableSchedulingProfiler) {
     markRenderStarted(lanes);
   }
+
+  // Debug timing: log render start (concurrent)
+  debugLogRenderStart(false); // false = concurrent render
+  debugLogUpdateRenderStart(lanes);
 
   outer: do {
     try {
@@ -2942,12 +2978,17 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {
     if (enableSchedulingProfiler) {
       markRenderYielded();
     }
+    // Debug: log that render yielded
+    debugLogUpdateYielded(lanes);
     return RootInProgress;
   } else {
     // Completed the tree.
     if (enableSchedulingProfiler) {
       markRenderStopped();
     }
+
+    // Debug timing: log render complete (concurrent)
+    debugLogRenderComplete();
 
     // Set this to null to indicate there's no in-progress render.
     workInProgressRoot = null;
@@ -3484,6 +3525,9 @@ function commitRoot(
     markCommitStarted(lanes);
   }
 
+  // Debug timing: log commit start
+  debugLogCommitStart();
+
   if (finishedWork === null) {
     if (enableSchedulingProfiler) {
       markCommitStopped();
@@ -4008,6 +4052,10 @@ function flushSpawnedWork(): void {
   pendingEffectsStatus = NO_PENDING_EFFECTS;
 
   pendingViewTransition = null; // The view transition has now fully started.
+
+  // Debug timing: log commit complete (mutations and layout effects done)
+  debugLogCommitComplete();
+  debugLogUpdateCommitted(pendingEffectsLanes);
 
   // Tell Scheduler to yield at the end of the frame, so the browser has an
   // opportunity to paint.
@@ -4779,6 +4827,9 @@ function pingSuspendedRoot(
   wakeable: Wakeable,
   pingedLanes: Lanes,
 ) {
+  // Debug: log ping event
+  debugLogUpdatePinged(pingedLanes);
+
   const pingCache = root.pingCache;
   if (pingCache !== null) {
     // The wakeable resolved, so we no longer need to memoize, because it will
