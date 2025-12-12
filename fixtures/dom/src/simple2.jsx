@@ -20,10 +20,8 @@ function SlowList({ count, num }) {
 }
 
 function SlowItem({ index, num }) {
-  for (let i = 0; i < 10000; i++) {
-    // console.log(Math.random());
-    window.x = Math.random();
-  }
+  let now = performance.now();
+  while (performance.now() - now < 2) {}
   return (
     <li>
       {index}: ({num})
@@ -34,30 +32,19 @@ function SlowItem({ index, num }) {
 let lastTime = null;
 
 export default function App() {
-  const [value, setValue] = React.useState('0');
-  const [num, setNum] = React.useState(0);
-
-  React.useEffect(() => {
-    log('updated', value, num);
-
-    const now = Date.now();
-    if (lastTime) {
-      log('time since last', now - lastTime);
-    }
-    lastTime = now;
-  }, [value, num]);
+  const [value, setValue] = React.useState('1');
+  const [num, setNum] = React.useState(1);
 
   function onChange(e) {
-    //React.startTransition(() => {
     setValue(e.target.value);
-    //React.startTransition(() => {
-    //  setNum(parseInt(e.target.value));
-    //});
+
+    React.startTransition(() => {
+      setNum(parseInt(e.target.value));
+    });
   }
 
   return (
     <div>
-      <div>{20000}</div>
       <input value={value} onChange={onChange} />
       <SlowList num={num} count={100} />
     </div>

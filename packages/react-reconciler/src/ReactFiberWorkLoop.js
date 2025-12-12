@@ -107,6 +107,9 @@ import {
   logUpdatePinged as debugLogUpdatePinged,
   logUpdateCommitted as debugLogUpdateCommitted,
   logUpdateRestarted as debugLogUpdateRestarted,
+  startTrackingComponentRenders,
+  logComponentRender,
+  stopTrackingComponentRenders,
 } from './ReactDebugTiming';
 
 import {
@@ -2583,6 +2586,8 @@ function renderRootSync(
 
     workInProgressTransitions = getTransitionsForLanes(root, lanes);
     prepareFreshStack(root, lanes);
+    // Start fresh component tracking for new render
+    startTrackingComponentRenders();
   }
 
   if (enableSchedulingProfiler) {
@@ -2744,6 +2749,8 @@ function renderRootConcurrent(root: FiberRoot, lanes: Lanes): RootExitStatus {
 
     resetRenderTimer();
     prepareFreshStack(root, lanes);
+    // Start fresh component tracking for new render
+    startTrackingComponentRenders();
   } else {
     // This is a continuation of an existing work-in-progress.
     //
@@ -3033,6 +3040,9 @@ function performUnitOfWork(unitOfWork: Fiber): void {
   // nothing should rely on this, but relying on it here means that we don't
   // need an additional field on the work in progress.
   const current = unitOfWork.alternate;
+
+  // Track component render for debug timing
+  logComponentRender(getComponentNameFromFiber(unitOfWork));
 
   let next;
   if (enableProfilerTimer && (unitOfWork.mode & ProfileMode) !== NoMode) {
@@ -4054,6 +4064,7 @@ function flushSpawnedWork(): void {
   pendingViewTransition = null; // The view transition has now fully started.
 
   // Debug timing: log commit complete (mutations and layout effects done)
+  stopTrackingComponentRenders();
   debugLogCommitComplete();
   debugLogUpdateCommitted(pendingEffectsLanes);
 

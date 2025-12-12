@@ -123,12 +123,16 @@ type UpdateInfo = {
   suspendCount: number,
   yieldCount: number,
   interruptCount: number,
+  componentRenderCounts: Map<string, number>,
 };
 
 const activeUpdates: Map<number, UpdateInfo> = new Map();
 
 // Current update being processed (for correlating events)
 let currentUpdateId: number | null = null;
+
+// Current lanes being rendered (for component tracking)
+let currentRenderingLanes: number = 0;
 
 // Lane to priority name mapping
 function getLanePriorityName(lanes: number): string {
@@ -181,6 +185,7 @@ export function logUpdateScheduled(lanes: number): number {
     suspendCount: 0,
     yieldCount: 0,
     interruptCount: 0,
+    componentRenderCounts: new Map(),
   };
 
   activeUpdates.set(id, info);
@@ -200,6 +205,9 @@ export function logUpdateScheduled(lanes: number): number {
 
 // Called when an update starts rendering
 export function logUpdateRenderStart(lanes: number): void {
+  // Set current lanes for component tracking
+  currentRenderingLanes = lanes;
+
   // Find or create update for these lanes
   let update: UpdateInfo | null = null;
   for (const [id, info] of activeUpdates) {
@@ -222,6 +230,7 @@ export function logUpdateRenderStart(lanes: number): void {
       suspendCount: 0,
       yieldCount: 0,
       interruptCount: 0,
+      componentRenderCounts: new Map(),
     };
     activeUpdates.set(id, update);
     currentUpdateId = id;
@@ -372,6 +381,10 @@ export function logUpdateCommitted(lanes: number): void {
       `%c[Update #${update.id}]   Interrupts:  ${update.interruptCount}`,
       'color: #4caf50;'
     );
+
+    // Log component render counts
+    logComponentRenderSummary(update);
+
     console.log(
       `%c[Update #${update.id}] ═══════════════════════════════════════`,
       'color: #888;'
@@ -416,4 +429,62 @@ function findUpdateByLanes(lanes: number): UpdateInfo | null {
 // Get current active update count (for debugging)
 export function getActiveUpdateCount(): number {
   return activeUpdates.size;
+}
+
+// ============================================================================
+// COMPONENT RENDER TRACKING
+// ============================================================================
+
+// Start tracking component renders for a new render cycle
+// (clears the counts for the current update)
+export function startTrackingComponentRenders(): void {
+  // Find update for current lanes and clear its component counts
+  const update = findUpdateByLanes(currentRenderingLanes);
+  if (update) {
+    update.componentRenderCounts.clear();
+  }
+}
+
+// Record that a component was rendered
+export function logComponentRender(componentName: string | null): void {
+  // Find the current update and add to its component counts
+  const update = findUpdateByLanes(currentRenderingLanes);
+  if (update) {
+    const name = componentName || 'Anonymous';
+    const count = update.componentRenderCounts.get(name) || 0;
+    update.componentRenderCounts.set(name, count + 1);
+  }
+}
+
+// Log summary of component renders (called from logUpdateCommitted)
+function logComponentRenderSummary(update: UpdateInfo): void {
+  const componentCounts = update.componentRenderCounts;
+  if (componentCounts.size === 0) return;
+
+  // Sort by count (descending) then by name
+  const sorted = Array.from(componentCounts.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  const total = sorted.reduce((sum, [, count]) => sum + count, 0);
+
+  console.log(
+    `%c[Update #${update.id}]   Components: ${total} rendered`,
+    'color: #00bcd4; font-weight: bold;'
+  );
+
+  // Print each component with its count
+  for (const [name, count] of sorted) {
+    const bar = '█'.repeat(Math.min(count, 20));
+    console.log(
+      `%c[Update #${update.id}]     ${name}: ${count} ${bar}`,
+      'color: #00bcd4;'
+    );
+  }
+}
+
+// Stop tracking (kept for compatibility)
+export function stopTrackingComponentRenders(): void {
+  // Summary is now logged in logUpdateCommitted
 }

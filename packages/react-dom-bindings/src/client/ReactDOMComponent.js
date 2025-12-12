@@ -1436,8 +1436,6 @@ export function updateProperties(
   lastProps: Object,
   nextProps: Object,
 ): void {
-  // [NOOP BUILD] DOM mutations disabled
-  return;
   if (__DEV__) {
     validatePropertiesInDevelopment(tag, nextProps);
   }
