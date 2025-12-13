@@ -98,6 +98,8 @@ import {
   logRenderComplete as debugLogRenderComplete,
   logCommitStart as debugLogCommitStart,
   logCommitComplete as debugLogCommitComplete,
+  logPassiveEffectsStart as debugLogPassiveEffectsStart,
+  logPassiveEffectsComplete as debugLogPassiveEffectsComplete,
   logUpdateScheduled as debugLogUpdateScheduled,
   logUpdateRenderStart as debugLogUpdateRenderStart,
   logUpdateInterrupted as debugLogUpdateInterrupted,
@@ -4063,10 +4065,8 @@ function flushSpawnedWork(): void {
 
   pendingViewTransition = null; // The view transition has now fully started.
 
-  // Debug timing: log commit complete (mutations and layout effects done)
+  // Debug timing: stop tracking component renders
   stopTrackingComponentRenders();
-  debugLogCommitComplete();
-  debugLogUpdateCommitted(pendingEffectsLanes);
 
   // Tell Scheduler to yield at the end of the frame, so the browser has an
   // opportunity to paint.
@@ -4088,6 +4088,11 @@ function flushSpawnedWork(): void {
       finishedWork.actualDuration !== 0) ||
     (finishedWork.subtreeFlags & passiveSubtreeMask) !== NoFlags ||
     (finishedWork.flags & passiveSubtreeMask) !== NoFlags;
+
+  // Debug timing: log commit complete (mutations and layout effects done)
+  // Pass whether there are pending passive effects so we can defer the summary
+  debugLogCommitComplete(rootDidHavePassiveEffects);
+  debugLogUpdateCommitted(pendingEffectsLanes);
 
   if (rootDidHavePassiveEffects) {
     pendingEffectsStatus = PENDING_PASSIVE_PHASE;
@@ -4601,6 +4606,7 @@ function flushPassiveEffectsImpl() {
   if (enableSchedulingProfiler) {
     markPassiveEffectsStarted(lanes);
   }
+  debugLogPassiveEffectsStart();
 
   const prevExecutionContext = executionContext;
   executionContext |= CommitContext;
@@ -4617,6 +4623,7 @@ function flushPassiveEffectsImpl() {
   if (enableSchedulingProfiler) {
     markPassiveEffectsStopped();
   }
+  debugLogPassiveEffectsComplete();
 
   if (__DEV__) {
     commitDoubleInvokeEffectsInDEV(root, true);

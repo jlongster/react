@@ -19,7 +19,10 @@ const DEBUG_TIMING_ENABLED = true;
 let renderCount = 0;
 let currentRenderStart = 0;
 let currentCommitStart = 0;
+let currentCommitEnd = 0;
+let currentPassiveEffectsStart = 0;
 let isInitialMount = true;
+let hasPendingPassiveEffects = false;
 
 export function logRenderStart(isSync: boolean): void {
   renderCount++;
@@ -50,21 +53,65 @@ export function logCommitStart(): void {
   );
 }
 
-export function logCommitComplete(): void {
+export function logCommitComplete(hasPassiveEffects: boolean): void {
   // After first commit, subsequent ones are updates
   const wasInitialMount = isInitialMount;
   isInitialMount = false;
+  currentCommitEnd = performance.now();
+  hasPendingPassiveEffects = hasPassiveEffects;
 
   if (!DEBUG_TIMING_ENABLED) return;
 
-  const commitDuration = performance.now() - currentCommitStart;
-  const totalDuration = performance.now() - currentRenderStart;
   const phase = wasInitialMount ? 'MOUNT' : 'UPDATE';
 
   console.log(
     `%c[React Timing] Commit #${renderCount} COMPLETE (${phase})`,
     'color: #f0db4f;'
   );
+
+  // If there are passive effects, wait for them before printing summary
+  if (hasPassiveEffects) {
+    console.log(
+      `%c[React Timing] Passive effects pending...`,
+      'color: #ff9800; font-style: italic;'
+    );
+  } else {
+    // No passive effects, print summary now
+    printTimingSummary(wasInitialMount ? 'MOUNT' : 'UPDATE', 0);
+  }
+}
+
+export function logPassiveEffectsStart(): void {
+  currentPassiveEffectsStart = performance.now();
+  if (!DEBUG_TIMING_ENABLED) return;
+  console.log(
+    `%c[React Timing] Passive Effects #${renderCount} START`,
+    'color: #ff9800; font-weight: bold;'
+  );
+}
+
+export function logPassiveEffectsComplete(): void {
+  if (!DEBUG_TIMING_ENABLED) return;
+
+  const passiveEffectsDuration = performance.now() - currentPassiveEffectsStart;
+
+  console.log(
+    `%c[React Timing] Passive Effects #${renderCount} COMPLETE: ${passiveEffectsDuration.toFixed(2)}ms`,
+    'color: #ff9800;'
+  );
+
+  // Now print the full summary including passive effects
+  if (hasPendingPassiveEffects) {
+    printTimingSummary(isInitialMount ? 'UPDATE' : 'UPDATE', passiveEffectsDuration);
+    hasPendingPassiveEffects = false;
+  }
+}
+
+function printTimingSummary(phase: string, passiveEffectsDuration: number): void {
+  const commitDuration = currentCommitEnd - currentCommitStart;
+  const renderDuration = currentCommitStart - currentRenderStart;
+  const totalDuration = (currentCommitEnd - currentRenderStart) + passiveEffectsDuration;
+
   console.log(
     `%c[React Timing] ─────────────────────────────────`,
     'color: #888;'
@@ -78,15 +125,21 @@ export function logCommitComplete(): void {
     'color: #4caf50;'
   );
   console.log(
-    `%c[React Timing]   Render: ${(totalDuration - commitDuration).toFixed(2)}ms`,
+    `%c[React Timing]   Render:          ${renderDuration.toFixed(2)}ms`,
     'color: #4caf50;'
   );
   console.log(
-    `%c[React Timing]   Commit: ${commitDuration.toFixed(2)}ms`,
+    `%c[React Timing]   Commit:          ${commitDuration.toFixed(2)}ms`,
     'color: #4caf50;'
   );
+  if (passiveEffectsDuration > 0) {
+    console.log(
+      `%c[React Timing]   Passive Effects: ${passiveEffectsDuration.toFixed(2)}ms`,
+      'color: #ff9800;'
+    );
+  }
   console.log(
-    `%c[React Timing]   Total:  ${totalDuration.toFixed(2)}ms`,
+    `%c[React Timing]   Total:           ${totalDuration.toFixed(2)}ms`,
     'color: #4caf50; font-weight: bold;'
   );
   console.log(

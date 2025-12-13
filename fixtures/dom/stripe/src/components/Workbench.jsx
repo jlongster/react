@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   TerminalIcon,
   MinimizeIcon,
@@ -499,7 +499,7 @@ function TrayActions() {
   );
 }
 
-export default function Workbench({ customerId }) {
+function Workbench({ customerId }) {
   const [activeTab, setActiveTab] = useState('inspector');
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -662,3 +662,5 @@ export default function Workbench({ customerId }) {
     </div>
   );
 }
+
+export default memo(Workbench);

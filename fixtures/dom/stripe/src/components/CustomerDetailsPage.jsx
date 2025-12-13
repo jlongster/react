@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Text, Button, Badge, Card, DeepNest, FlexContainer, Grid, GridItem, List, ListItem, Divider } from './Wrappers';
 import { ComplexSubscriptionsTable, ComplexPaymentsTable, ComplexInvoicesTable } from './ComplexTable';
 import { ChevronRightIcon, PlusIcon, MoreDotsIcon, EditIcon, CopyIcon, ClockIcon, LightbulbIcon, CloseIcon } from './Icons';
@@ -668,7 +668,7 @@ function ModalPlaceholders() {
 // MAIN CUSTOMER DETAILS PAGE
 // ========================================
 
-export default function CustomerDetailsPage({ customer, subscriptions, payments, invoices }) {
+function CustomerDetailsPage({ customer, subscriptions, payments, invoices, renderCounter = 0 }) {
   return (
     <PageOuter>
       <PageContainer>
@@ -676,8 +676,13 @@ export default function CustomerDetailsPage({ customer, subscriptions, payments,
           <PageInner>
             <PageLayout
               data-testid="product-boundary-customer-details-page"
+              data-render-counter={renderCounter}
               style={{ paddingTop: '60px' }}
             >
+              {/* Hidden element that changes on rerender to force DOM commit */}
+              <div data-content-render={renderCounter} style={{ display: 'none' }}>
+                Render: {renderCounter}
+              </div>
               <DeepNest depth={3}>
                 <CustomerHeader customer={customer} />
               </DeepNest>
@@ -833,3 +838,5 @@ export default function CustomerDetailsPage({ customer, subscriptions, payments,
     </PageOuter>
   );
 }
+
+export default memo(CustomerDetailsPage);

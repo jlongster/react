@@ -2981,7 +2981,10 @@
       var renderCount = 0;
       var currentRenderStart = 0;
       var currentCommitStart = 0;
+      var currentCommitEnd = 0;
+      var currentPassiveEffectsStart = 0;
       var isInitialMount = true;
+      var hasPendingPassiveEffects = false;
       function logRenderStart(isSync) {
         renderCount++;
         currentRenderStart = performance.now();
@@ -2995,6 +2998,38 @@
         console.log(
           "%c[React Timing] Render #" + renderCount + " COMPLETE: " + duration.toFixed(2) + "ms",
           "color: #61dafb;"
+        );
+      }
+      function printTimingSummary(phase, passiveEffectsDuration) {
+        var commitDuration = currentCommitEnd - currentCommitStart, renderDuration = currentCommitStart - currentRenderStart, totalDuration = currentCommitEnd - currentRenderStart + passiveEffectsDuration;
+        console.log(
+          "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+          "color: #888;"
+        );
+        console.log(
+          "%c[React Timing] Summary #" + renderCount + ":",
+          "color: #4caf50; font-weight: bold;"
+        );
+        console.log("%c[React Timing]   Phase: " + phase, "color: #4caf50;");
+        console.log(
+          "%c[React Timing]   Render:          " + renderDuration.toFixed(2) + "ms",
+          "color: #4caf50;"
+        );
+        console.log(
+          "%c[React Timing]   Commit:          " + commitDuration.toFixed(2) + "ms",
+          "color: #4caf50;"
+        );
+        0 < passiveEffectsDuration && console.log(
+          "%c[React Timing]   Passive Effects: " + passiveEffectsDuration.toFixed(2) + "ms",
+          "color: #ff9800;"
+        );
+        console.log(
+          "%c[React Timing]   Total:           " + totalDuration.toFixed(2) + "ms",
+          "color: #4caf50; font-weight: bold;"
+        );
+        console.log(
+          "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+          "color: #888;"
         );
       }
       var updateIdCounter = 0;
@@ -11379,81 +11414,67 @@
         if (4 === pendingEffectsStatus || 3 === pendingEffectsStatus) {
           pendingEffectsStatus = 0;
           pendingViewTransition = null;
+          requestPaint();
+          var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors, passiveSubtreeMask = (lanes & 335544064) === lanes ? 10262 : 10256;
+          passiveSubtreeMask = 0 !== (finishedWork.subtreeFlags & passiveSubtreeMask) || 0 !== (finishedWork.flags & passiveSubtreeMask);
           var wasInitialMount = isInitialMount;
           isInitialMount = false;
-          var commitDuration = performance.now() - currentCommitStart, totalDuration = performance.now() - currentRenderStart;
-          wasInitialMount = wasInitialMount ? "MOUNT" : "UPDATE";
+          currentCommitEnd = performance.now();
+          hasPendingPassiveEffects = passiveSubtreeMask;
           console.log(
-            "%c[React Timing] Commit #" + renderCount + " COMPLETE (" + wasInitialMount + ")",
+            "%c[React Timing] Commit #" + renderCount + " COMPLETE (" + (wasInitialMount ? "MOUNT" : "UPDATE") + ")",
             "color: #f0db4f;"
           );
-          console.log(
-            "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
-            "color: #888;"
-          );
-          console.log(
-            "%c[React Timing] Summary #" + renderCount + ":",
-            "color: #4caf50; font-weight: bold;"
-          );
-          console.log(
-            "%c[React Timing]   Phase: " + wasInitialMount,
-            "color: #4caf50;"
-          );
-          console.log(
-            "%c[React Timing]   Render: " + (totalDuration - commitDuration).toFixed(2) + "ms",
-            "color: #4caf50;"
-          );
-          console.log(
-            "%c[React Timing]   Commit: " + commitDuration.toFixed(2) + "ms",
-            "color: #4caf50;"
-          );
-          console.log(
-            "%c[React Timing]   Total:  " + totalDuration.toFixed(2) + "ms",
-            "color: #4caf50; font-weight: bold;"
-          );
-          console.log(
-            "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
-            "color: #888;"
-          );
-          if (commitDuration = findUpdateByLanes(pendingEffectsLanes))
-            commitDuration.status = "committed", totalDuration = performance.now() - commitDuration.startTime, console.log(
-              "%c[Update #" + commitDuration.id + "] COMMITTED TO DOM",
+          passiveSubtreeMask ? console.log(
+            "%c[React Timing] Passive effects pending...",
+            "color: #ff9800; font-style: italic;"
+          ) : printTimingSummary(wasInitialMount ? "MOUNT" : "UPDATE", 0);
+          if (wasInitialMount = findUpdateByLanes(pendingEffectsLanes)) {
+            wasInitialMount.status = "committed";
+            var duration = performance.now() - wasInitialMount.startTime;
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "] COMMITTED TO DOM",
               "color: #4caf50; font-weight: bold;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
               "color: #888;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "] Summary:",
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "] Summary:",
               "color: #4caf50; font-weight: bold;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Priority:    " + commitDuration.priority,
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "]   Priority:    " + wasInitialMount.priority,
               "color: #4caf50;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Total time:  " + totalDuration.toFixed(2) + "ms",
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "]   Total time:  " + duration.toFixed(2) + "ms",
               "color: #4caf50;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Suspends:    " + commitDuration.suspendCount,
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "]   Suspends:    " + wasInitialMount.suspendCount,
               "color: #4caf50;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Yields:      " + commitDuration.yieldCount,
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "]   Yields:      " + wasInitialMount.yieldCount,
               "color: #4caf50;"
-            ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Interrupts:  " + commitDuration.interruptCount,
+            );
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "]   Interrupts:  " + wasInitialMount.interruptCount,
               "color: #4caf50;"
-            ), logComponentRenderSummary(commitDuration), console.log(
-              "%c[Update #" + commitDuration.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+            );
+            logComponentRenderSummary(wasInitialMount);
+            console.log(
+              "%c[Update #" + wasInitialMount.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
               "color: #888;"
-            ), activeUpdates.delete(commitDuration.id);
-          requestPaint();
-          commitDuration = pendingEffectsRoot;
-          var finishedWork = pendingFinishedWork;
-          totalDuration = pendingEffectsLanes;
-          wasInitialMount = pendingRecoverableErrors;
-          var passiveSubtreeMask = (totalDuration & 335544064) === totalDuration ? 10262 : 10256;
-          0 !== (finishedWork.subtreeFlags & passiveSubtreeMask) || 0 !== (finishedWork.flags & passiveSubtreeMask) ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(commitDuration, commitDuration.pendingLanes));
-          passiveSubtreeMask = commitDuration.pendingLanes;
+            );
+            activeUpdates.delete(wasInitialMount.id);
+          }
+          passiveSubtreeMask ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root3, root3.pendingLanes));
+          passiveSubtreeMask = root3.pendingLanes;
           0 === passiveSubtreeMask && (legacyErrorBoundariesThatAlreadyFailed = null);
-          lanesToEventPriority(totalDuration);
+          lanesToEventPriority(lanes);
           finishedWork = finishedWork.stateNode;
           if (injectedHook && "function" === typeof injectedHook.onCommitFiberRoot)
             try {
@@ -11465,14 +11486,15 @@
               );
             } catch (err) {
             }
-          if (null !== wasInitialMount) {
+          if (null !== recoverableErrors) {
             finishedWork = ReactSharedInternals.T;
             passiveSubtreeMask = ReactDOMSharedInternals.p;
             ReactDOMSharedInternals.p = 2;
             ReactSharedInternals.T = null;
             try {
-              for (var onRecoverableError = commitDuration.onRecoverableError, i = 0; i < wasInitialMount.length; i++) {
-                var recoverableError = wasInitialMount[i];
+              var onRecoverableError = root3.onRecoverableError;
+              for (wasInitialMount = 0; wasInitialMount < recoverableErrors.length; wasInitialMount++) {
+                var recoverableError = recoverableErrors[wasInitialMount];
                 onRecoverableError(recoverableError.value, {
                   componentStack: recoverableError.stack
                 });
@@ -11481,16 +11503,16 @@
               ReactSharedInternals.T = finishedWork, ReactDOMSharedInternals.p = passiveSubtreeMask;
             }
           }
-          onRecoverableError = pendingViewTransitionEvents;
-          recoverableError = pendingTransitionTypes;
+          recoverableErrors = pendingViewTransitionEvents;
+          onRecoverableError = pendingTransitionTypes;
           pendingTransitionTypes = null;
-          if (null !== onRecoverableError)
-            for (pendingViewTransitionEvents = null, null === recoverableError && (recoverableError = []), wasInitialMount = 0; wasInitialMount < onRecoverableError.length; wasInitialMount++)
-              (0, onRecoverableError[wasInitialMount])(recoverableError);
+          if (null !== recoverableErrors)
+            for (pendingViewTransitionEvents = null, null === onRecoverableError && (onRecoverableError = []), recoverableError = 0; recoverableError < recoverableErrors.length; recoverableError++)
+              (0, recoverableErrors[recoverableError])(onRecoverableError);
           0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
-          ensureRootIsScheduled(commitDuration);
-          passiveSubtreeMask = commitDuration.pendingLanes;
-          0 !== (totalDuration & 261930) && 0 !== (passiveSubtreeMask & 42) ? commitDuration === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = commitDuration) : nestedUpdateCount = 0;
+          ensureRootIsScheduled(root3);
+          passiveSubtreeMask = root3.pendingLanes;
+          0 !== (lanes & 261930) && 0 !== (passiveSubtreeMask & 42) ? root3 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root3) : nestedUpdateCount = 0;
           if (hasScheduledReplayAttempt) {
             hasScheduledReplayAttempt = false;
             null !== queuedFocus && attemptReplayContinuousQueuedEvent(queuedFocus) && (queuedFocus = null);
@@ -11498,16 +11520,10 @@
             null !== queuedMouse && attemptReplayContinuousQueuedEvent(queuedMouse) && (queuedMouse = null);
             queuedPointers.forEach(attemptReplayContinuousQueuedEventInMap);
             queuedPointerCaptures.forEach(attemptReplayContinuousQueuedEventInMap);
-            for (onRecoverableError = 0; onRecoverableError < queuedChangeEventTargets.length; onRecoverableError++)
-              recoverableError = queuedChangeEventTargets[onRecoverableError], "INPUT" === recoverableError.nodeName ? "checkbox" === recoverableError.type || "radio" === recoverableError.type ? (recoverableError.dispatchEvent(
+            for (root3 = 0; root3 < queuedChangeEventTargets.length; root3++)
+              lanes = queuedChangeEventTargets[root3], "INPUT" === lanes.nodeName ? "checkbox" === lanes.type || "radio" === lanes.type ? (lanes.dispatchEvent(
                 new ("function" === typeof PointerEvent ? PointerEvent : Event)("click", { bubbles: true })
-              ), recoverableError.dispatchEvent(
-                new Event("input", { bubbles: true })
-              )) : "function" === typeof InputEvent && recoverableError.dispatchEvent(
-                new InputEvent("input", { bubbles: true })
-              ) : "TEXTAREA" === recoverableError.nodeName && "function" === typeof InputEvent && recoverableError.dispatchEvent(
-                new InputEvent("input", { bubbles: true })
-              ), recoverableError.dispatchEvent(new Event("change", { bubbles: true }));
+              ), lanes.dispatchEvent(new Event("input", { bubbles: true }))) : "function" === typeof InputEvent && lanes.dispatchEvent(new InputEvent("input", { bubbles: true })) : "TEXTAREA" === lanes.nodeName && "function" === typeof InputEvent && lanes.dispatchEvent(new InputEvent("input", { bubbles: true })), lanes.dispatchEvent(new Event("change", { bubbles: true }));
             queuedChangeEventTargets.length = 0;
           }
           flushSyncWorkAcrossRoots_impl(0, false);
@@ -11699,6 +11715,11 @@
           pendingFinishedWork = pendingEffectsRoot = null;
           pendingEffectsLanes = 0;
           if (0 !== (executionContext & 6)) throw Error(formatProdErrorMessage(331));
+          currentPassiveEffectsStart = performance.now();
+          console.log(
+            "%c[React Timing] Passive Effects #" + renderCount + " START",
+            "color: #ff9800; font-weight: bold;"
+          );
           var prevExecutionContext = executionContext;
           executionContext |= 4;
           commitPassiveUnmountOnFiber(root$jscomp$0.current);
@@ -11708,6 +11729,12 @@
             lanes,
             renderPriority
           );
+          var passiveEffectsDuration = performance.now() - currentPassiveEffectsStart;
+          console.log(
+            "%c[React Timing] Passive Effects #" + renderCount + " COMPLETE: " + passiveEffectsDuration.toFixed(2) + "ms",
+            "color: #ff9800;"
+          );
+          hasPendingPassiveEffects && (printTimingSummary("UPDATE", passiveEffectsDuration), hasPendingPassiveEffects = false);
           executionContext = prevExecutionContext;
           flushSyncWorkAcrossRoots_impl(0, false);
           if (injectedHook && "function" === typeof injectedHook.onPostCommitFiberRoot)
@@ -12075,17 +12102,17 @@
           200
         ), nativeEventTarget[internalScrollTimer] = targetInst);
       }
-      for (i$jscomp$inline_1833 = 0; i$jscomp$inline_1833 < simpleEventPluginEvents.length; i$jscomp$inline_1833++) {
-        eventName$jscomp$inline_1834 = simpleEventPluginEvents[i$jscomp$inline_1833], domEventName$jscomp$inline_1835 = eventName$jscomp$inline_1834.toLowerCase(), capitalizedEvent$jscomp$inline_1836 = eventName$jscomp$inline_1834[0].toUpperCase() + eventName$jscomp$inline_1834.slice(1);
+      for (i$jscomp$inline_1832 = 0; i$jscomp$inline_1832 < simpleEventPluginEvents.length; i$jscomp$inline_1832++) {
+        eventName$jscomp$inline_1833 = simpleEventPluginEvents[i$jscomp$inline_1832], domEventName$jscomp$inline_1834 = eventName$jscomp$inline_1833.toLowerCase(), capitalizedEvent$jscomp$inline_1835 = eventName$jscomp$inline_1833[0].toUpperCase() + eventName$jscomp$inline_1833.slice(1);
         registerSimpleEvent(
-          domEventName$jscomp$inline_1835,
-          "on" + capitalizedEvent$jscomp$inline_1836
+          domEventName$jscomp$inline_1834,
+          "on" + capitalizedEvent$jscomp$inline_1835
         );
       }
-      var eventName$jscomp$inline_1834;
-      var domEventName$jscomp$inline_1835;
-      var capitalizedEvent$jscomp$inline_1836;
-      var i$jscomp$inline_1833;
+      var eventName$jscomp$inline_1833;
+      var domEventName$jscomp$inline_1834;
+      var capitalizedEvent$jscomp$inline_1835;
+      var i$jscomp$inline_1832;
       registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
       registerSimpleEvent(ANIMATION_ITERATION, "onAnimationIteration");
       registerSimpleEvent(ANIMATION_START, "onAnimationStart");
@@ -15621,12 +15648,12 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_2251 = React9.version;
-      if ("19.3.0-canary-393aa7b5-20251208" !== isomorphicReactPackageVersion$jscomp$inline_2251)
+      var isomorphicReactPackageVersion$jscomp$inline_2250 = React9.version;
+      if ("19.3.0-canary-393aa7b5-20251208" !== isomorphicReactPackageVersion$jscomp$inline_2250)
         throw Error(
           formatProdErrorMessage(
             527,
-            isomorphicReactPackageVersion$jscomp$inline_2251,
+            isomorphicReactPackageVersion$jscomp$inline_2250,
             "19.3.0-canary-393aa7b5-20251208"
           )
         );
@@ -15643,7 +15670,7 @@
         componentOrElement = null === componentOrElement ? null : componentOrElement.stateNode;
         return componentOrElement;
       };
-      var internals$jscomp$inline_2955 = {
+      var internals$jscomp$inline_2957 = {
         bundleType: 0,
         version: "19.3.0-canary-393aa7b5-20251208",
         rendererPackageName: "react-dom",
@@ -15651,16 +15678,16 @@
         reconcilerVersion: "19.3.0-canary-393aa7b5-20251208"
       };
       if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-        hook$jscomp$inline_2956 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
-        if (!hook$jscomp$inline_2956.isDisabled && hook$jscomp$inline_2956.supportsFiber)
+        hook$jscomp$inline_2958 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+        if (!hook$jscomp$inline_2958.isDisabled && hook$jscomp$inline_2958.supportsFiber)
           try {
-            rendererID = hook$jscomp$inline_2956.inject(
-              internals$jscomp$inline_2955
-            ), injectedHook = hook$jscomp$inline_2956;
+            rendererID = hook$jscomp$inline_2958.inject(
+              internals$jscomp$inline_2957
+            ), injectedHook = hook$jscomp$inline_2958;
           } catch (err) {
           }
       }
-      var hook$jscomp$inline_2956;
+      var hook$jscomp$inline_2958;
       exports.createRoot = function(container, options2) {
         if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
         var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, onDefaultTransitionIndicator = defaultOnDefaultTransitionIndicator;
@@ -15908,6 +15935,345 @@
     return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
   }
   function DeepNest({ depth = 10, children }) {
+    (0, import_react.useEffect)(() => {
+      const analyticsData = {};
+      const eventTypes = ["click", "scroll", "hover", "focus", "blur", "submit", "change", "input", "keydown", "keyup"];
+      const pageNames = ["home", "dashboard", "settings", "profile", "checkout", "cart", "product", "search", "category", "help"];
+      const userSegments = ["new", "returning", "premium", "trial", "enterprise", "free", "churned", "active", "dormant", "vip"];
+      const deviceTypes = ["desktop", "mobile", "tablet", "tv", "watch", "console", "embedded", "kiosk", "ar", "vr"];
+      const browsers = ["chrome", "firefox", "safari", "edge", "opera", "brave", "vivaldi", "samsung", "uc", "qq"];
+      const countries = ["us", "uk", "de", "fr", "jp", "cn", "in", "br", "au", "ca", "mx", "es", "it", "kr", "ru"];
+      const campaigns = ["organic", "paid", "social", "email", "referral", "direct", "affiliate", "display", "video", "native"];
+      for (let i = 0; i < 100; i++) {
+        const eventType = eventTypes[i % eventTypes.length];
+        const pageName = pageNames[i % pageNames.length];
+        const segment = userSegments[i % userSegments.length];
+        const device = deviceTypes[i % deviceTypes.length];
+        const browser = browsers[i % browsers.length];
+        const country = countries[i % countries.length];
+        const campaign = campaigns[i % campaigns.length];
+        const key = `${eventType}_${pageName}_${segment}_${device}_${browser}_${country}_${campaign}`;
+        analyticsData[key] = {
+          count: Math.floor(Math.random() * 1e4),
+          uniqueUsers: Math.floor(Math.random() * 5e3),
+          avgDuration: Math.random() * 300,
+          bounceRate: Math.random(),
+          conversionRate: Math.random() * 0.1,
+          revenue: Math.random() * 1e5,
+          timestamp: Date.now() - Math.floor(Math.random() * 864e5),
+          sessionId: `sess_${Math.random().toString(36).substring(2, 15)}`,
+          userId: `user_${Math.random().toString(36).substring(2, 15)}`,
+          metadata: {
+            referrer: `https://example${i}.com/page${i}`,
+            landingPage: `/landing/${pageName}/${i}`,
+            exitPage: `/exit/${pageName}/${i}`,
+            pageViews: Math.floor(Math.random() * 20),
+            timeOnPage: Math.random() * 600,
+            scrollDepth: Math.random(),
+            clickCount: Math.floor(Math.random() * 50),
+            formSubmissions: Math.floor(Math.random() * 5),
+            errors: Math.floor(Math.random() * 3),
+            warnings: Math.floor(Math.random() * 10)
+          }
+        };
+      }
+      const aggregatedMetrics = {};
+      for (const key in analyticsData) {
+        const data = analyticsData[key];
+        const parts = key.split("_");
+        const eventType = parts[0];
+        if (!aggregatedMetrics[eventType]) {
+          aggregatedMetrics[eventType] = { totalCount: 0, totalRevenue: 0, avgConversion: 0, samples: 0 };
+        }
+        aggregatedMetrics[eventType].totalCount += data.count;
+        aggregatedMetrics[eventType].totalRevenue += data.revenue;
+        aggregatedMetrics[eventType].avgConversion += data.conversionRate;
+        aggregatedMetrics[eventType].samples += 1;
+      }
+      for (const eventType in aggregatedMetrics) {
+        aggregatedMetrics[eventType].avgConversion /= aggregatedMetrics[eventType].samples;
+      }
+      window.__deepNestAnalytics = aggregatedMetrics;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const validationSchemas = {};
+      const fieldTypes = ["text", "email", "password", "number", "phone", "url", "date", "datetime", "time", "select", "checkbox", "radio", "textarea", "file", "color"];
+      const validationRules = ["required", "minLength", "maxLength", "pattern", "min", "max", "email", "url", "phone", "custom"];
+      const errorMessages = {
+        required: "This field is required",
+        minLength: "Must be at least {min} characters",
+        maxLength: "Must be no more than {max} characters",
+        pattern: "Invalid format",
+        min: "Must be at least {min}",
+        max: "Must be no more than {max}",
+        email: "Invalid email address",
+        url: "Invalid URL",
+        phone: "Invalid phone number",
+        custom: "Validation failed"
+      };
+      for (let formIndex = 0; formIndex < 20; formIndex++) {
+        const formName = `form_${formIndex}`;
+        validationSchemas[formName] = { fields: {}, dependencies: [], conditionals: [] };
+        for (let fieldIndex = 0; fieldIndex < 15; fieldIndex++) {
+          const fieldName = `field_${formIndex}_${fieldIndex}`;
+          const fieldType = fieldTypes[fieldIndex % fieldTypes.length];
+          const rules = [];
+          for (let ruleIndex = 0; ruleIndex < 5; ruleIndex++) {
+            const ruleName = validationRules[(fieldIndex + ruleIndex) % validationRules.length];
+            rules.push({
+              name: ruleName,
+              value: ruleName === "minLength" ? 3 : ruleName === "maxLength" ? 100 : ruleName === "min" ? 0 : ruleName === "max" ? 1e3 : true,
+              message: errorMessages[ruleName].replace("{min}", "3").replace("{max}", "100"),
+              async: ruleName === "custom",
+              debounce: ruleName === "custom" ? 300 : 0
+            });
+          }
+          validationSchemas[formName].fields[fieldName] = {
+            type: fieldType,
+            label: `Field ${fieldIndex} Label`,
+            placeholder: `Enter ${fieldType}...`,
+            rules,
+            defaultValue: fieldType === "checkbox" ? false : fieldType === "number" ? 0 : "",
+            disabled: false,
+            readonly: false,
+            hidden: false,
+            order: fieldIndex,
+            group: `group_${Math.floor(fieldIndex / 5)}`,
+            helpText: `Help text for field ${fieldIndex}`,
+            errorText: "",
+            touched: false,
+            dirty: false,
+            valid: true
+          };
+        }
+        validationSchemas[formName].dependencies = [
+          { source: `field_${formIndex}_0`, target: `field_${formIndex}_1`, condition: "notEmpty" },
+          { source: `field_${formIndex}_2`, target: `field_${formIndex}_3`, condition: "equals", value: "show" },
+          { source: `field_${formIndex}_4`, target: `field_${formIndex}_5`, condition: "greaterThan", value: 10 }
+        ];
+      }
+      const compiledValidators = {};
+      for (const formName in validationSchemas) {
+        compiledValidators[formName] = {};
+        for (const fieldName in validationSchemas[formName].fields) {
+          const field = validationSchemas[formName].fields[fieldName];
+          compiledValidators[formName][fieldName] = field.rules.map((rule) => ({
+            validate: (value) => {
+              if (rule.name === "required") return value !== "" && value !== null && value !== void 0;
+              if (rule.name === "minLength") return String(value).length >= rule.value;
+              if (rule.name === "maxLength") return String(value).length <= rule.value;
+              if (rule.name === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+              return true;
+            },
+            message: rule.message
+          }));
+        }
+      }
+      window.__deepNestValidation = compiledValidators;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const workflows = {};
+      const stateNames = ["initial", "pending", "processing", "review", "approved", "rejected", "completed", "cancelled", "error", "retry"];
+      const actionNames = ["submit", "approve", "reject", "cancel", "retry", "complete", "escalate", "assign", "unassign", "comment"];
+      const conditions = ["isAdmin", "isOwner", "hasPermission", "isValid", "isComplete", "hasApproval", "withinLimit", "notExpired", "isActive", "hasBalance"];
+      for (let workflowIndex = 0; workflowIndex < 15; workflowIndex++) {
+        const workflowName = `workflow_${workflowIndex}`;
+        workflows[workflowName] = { states: {}, transitions: [], guards: [], actions: [], history: [] };
+        for (let stateIndex = 0; stateIndex < stateNames.length; stateIndex++) {
+          const stateName = stateNames[stateIndex];
+          workflows[workflowName].states[stateName] = {
+            name: stateName,
+            isInitial: stateIndex === 0,
+            isFinal: stateIndex >= 6,
+            onEnter: [`log_enter_${stateName}`, `notify_${stateName}`, `update_${stateName}`],
+            onExit: [`log_exit_${stateName}`, `cleanup_${stateName}`],
+            timeout: stateIndex < 6 ? 36e5 : null,
+            retryCount: 0,
+            maxRetries: 3,
+            metadata: {
+              description: `State ${stateName} for workflow ${workflowIndex}`,
+              category: stateIndex < 3 ? "active" : stateIndex < 6 ? "review" : "terminal",
+              priority: 10 - stateIndex,
+              sla: stateIndex < 6 ? 864e5 : null
+            }
+          };
+        }
+        for (let transitionIndex = 0; transitionIndex < 25; transitionIndex++) {
+          const fromState = stateNames[transitionIndex % (stateNames.length - 3)];
+          const toState = stateNames[(transitionIndex + 1 + Math.floor(transitionIndex / 3)) % stateNames.length];
+          const action = actionNames[transitionIndex % actionNames.length];
+          const guard = conditions[transitionIndex % conditions.length];
+          workflows[workflowName].transitions.push({
+            id: `t_${workflowIndex}_${transitionIndex}`,
+            from: fromState,
+            to: toState,
+            action,
+            guard,
+            priority: transitionIndex,
+            async: transitionIndex % 3 === 0,
+            rollback: transitionIndex % 4 === 0,
+            audit: true,
+            notify: ["owner", "admin", "watchers"],
+            hooks: {
+              before: [`validate_${action}`, `check_${guard}`],
+              after: [`record_${action}`, `trigger_${toState}`],
+              error: [`handle_error_${action}`, `notify_error`]
+            }
+          });
+        }
+        workflows[workflowName].history = Array.from({ length: 50 }, (_, i) => ({
+          timestamp: Date.now() - i * 6e4,
+          fromState: stateNames[i % stateNames.length],
+          toState: stateNames[(i + 1) % stateNames.length],
+          action: actionNames[i % actionNames.length],
+          actor: `user_${i % 10}`,
+          metadata: { ip: `192.168.1.${i}`, userAgent: "Mozilla/5.0", duration: Math.random() * 1e3 }
+        }));
+      }
+      const workflowEngine = {
+        workflows,
+        currentStates: {},
+        execute: (workflowName, action) => workflowName + "_" + action,
+        canExecute: (workflowName, action) => Boolean(workflows[workflowName]),
+        getAvailableActions: (workflowName) => actionNames
+      };
+      window.__deepNestWorkflows = workflowEngine;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const dataPipeline = { transformers: [], filters: [], aggregators: [], cache: /* @__PURE__ */ new Map() };
+      const operations = ["map", "filter", "reduce", "sort", "group", "join", "split", "merge", "dedupe", "sample"];
+      const dataTypes = ["string", "number", "boolean", "date", "array", "object", "null", "undefined", "symbol", "bigint"];
+      for (let pipelineIndex = 0; pipelineIndex < 30; pipelineIndex++) {
+        const transformerName = `transformer_${pipelineIndex}`;
+        const operation = operations[pipelineIndex % operations.length];
+        const inputType = dataTypes[pipelineIndex % dataTypes.length];
+        const outputType = dataTypes[(pipelineIndex + 1) % dataTypes.length];
+        dataPipeline.transformers.push({
+          name: transformerName,
+          operation,
+          inputType,
+          outputType,
+          config: {
+            parallel: pipelineIndex % 2 === 0,
+            batchSize: 100 + pipelineIndex * 10,
+            timeout: 5e3 + pipelineIndex * 100,
+            retries: 3,
+            backoff: "exponential",
+            cache: pipelineIndex % 3 === 0,
+            cacheTTL: 6e4,
+            logging: true,
+            metrics: true,
+            tracing: pipelineIndex % 4 === 0
+          },
+          transform: (data) => {
+            if (operation === "map") return Array.isArray(data) ? data.map((x) => x) : data;
+            if (operation === "filter") return Array.isArray(data) ? data.filter(() => true) : data;
+            if (operation === "reduce") return Array.isArray(data) ? data.reduce((a, b) => a, null) : data;
+            return data;
+          },
+          validate: (data) => data !== void 0,
+          preProcess: (data) => data,
+          postProcess: (data) => data,
+          errorHandler: (error) => console.error(error),
+          metadata: {
+            version: "1.0.0",
+            author: `author_${pipelineIndex}`,
+            created: Date.now() - pipelineIndex * 864e5,
+            updated: Date.now(),
+            tags: [`tag_${pipelineIndex}`, operation, inputType],
+            dependencies: pipelineIndex > 0 ? [`transformer_${pipelineIndex - 1}`] : []
+          }
+        });
+        dataPipeline.filters.push({
+          name: `filter_${pipelineIndex}`,
+          condition: (item) => item !== null,
+          priority: pipelineIndex,
+          enabled: true,
+          exclusive: false
+        });
+        dataPipeline.aggregators.push({
+          name: `aggregator_${pipelineIndex}`,
+          type: ["sum", "avg", "min", "max", "count"][pipelineIndex % 5],
+          field: `field_${pipelineIndex}`,
+          groupBy: pipelineIndex % 2 === 0 ? `group_${pipelineIndex}` : null
+        });
+      }
+      const sampleData = Array.from({ length: 1e3 }, (_, i) => ({
+        id: i,
+        value: Math.random() * 1e3,
+        category: `cat_${i % 10}`,
+        timestamp: Date.now() - i * 1e3,
+        tags: [`tag_${i % 5}`, `tag_${(i + 1) % 5}`],
+        nested: { a: i, b: i * 2, c: { d: i * 3 } }
+      }));
+      let processedData = sampleData;
+      for (const transformer of dataPipeline.transformers.slice(0, 5)) {
+        processedData = transformer.transform(processedData);
+      }
+      dataPipeline.cache.set("lastProcessed", processedData);
+      dataPipeline.cache.set("lastTimestamp", Date.now());
+      window.__deepNestPipeline = dataPipeline;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const i18nSystem = { locales: {}, formatters: {}, pluralRules: {}, translations: {} };
+      const locales = ["en-US", "en-GB", "es-ES", "es-MX", "fr-FR", "fr-CA", "de-DE", "de-AT", "ja-JP", "zh-CN", "zh-TW", "ko-KR", "pt-BR", "pt-PT", "it-IT", "ru-RU", "ar-SA", "hi-IN", "nl-NL", "pl-PL"];
+      const namespaces = ["common", "errors", "validation", "navigation", "forms", "buttons", "labels", "messages", "notifications", "tooltips"];
+      for (const locale of locales) {
+        i18nSystem.locales[locale] = {
+          code: locale,
+          language: locale.split("-")[0],
+          region: locale.split("-")[1],
+          direction: locale.startsWith("ar") || locale.startsWith("he") ? "rtl" : "ltr",
+          numberFormat: { decimal: locale.includes("DE") ? "," : ".", thousands: locale.includes("DE") ? "." : ",", currency: locale.includes("US") ? "$" : "\u20AC" },
+          dateFormat: { short: locale.includes("US") ? "MM/DD/YYYY" : "DD/MM/YYYY", long: "MMMM D, YYYY", time: locale.includes("US") ? "h:mm A" : "HH:mm" },
+          pluralRules: { zero: 0, one: 1, two: 2, few: [3, 4], many: [5, 10], other: "default" }
+        };
+        i18nSystem.formatters[locale] = {
+          number: (value, options = {}) => new Intl.NumberFormat(locale, options).format(value),
+          currency: (value, currency = "USD") => new Intl.NumberFormat(locale, { style: "currency", currency }).format(value),
+          date: (value, options = {}) => new Intl.DateTimeFormat(locale, options).format(value),
+          relativeTime: (value, unit) => new Intl.RelativeTimeFormat(locale).format(value, unit),
+          list: (values, options = {}) => new Intl.ListFormat(locale, options).format(values),
+          plural: (value) => new Intl.PluralRules(locale).select(value)
+        };
+        i18nSystem.translations[locale] = {};
+        for (const namespace of namespaces) {
+          i18nSystem.translations[locale][namespace] = {};
+          for (let keyIndex = 0; keyIndex < 50; keyIndex++) {
+            const key = `${namespace}.key_${keyIndex}`;
+            i18nSystem.translations[locale][namespace][`key_${keyIndex}`] = {
+              value: `[${locale}] ${namespace} translation ${keyIndex}`,
+              description: `Translation for ${key}`,
+              context: namespace,
+              maxLength: 100,
+              placeholders: keyIndex % 3 === 0 ? ["{name}", "{count}"] : [],
+              plural: keyIndex % 5 === 0 ? { one: "item", other: "items" } : null,
+              gender: keyIndex % 7 === 0 ? { male: "his", female: "her", neutral: "their" } : null,
+              lastUpdated: Date.now() - keyIndex * 36e5,
+              verified: keyIndex % 2 === 0,
+              automated: keyIndex % 4 === 0
+            };
+          }
+        }
+      }
+      const t = (key, locale = "en-US", params = {}) => {
+        const parts = key.split(".");
+        const namespace = parts[0];
+        const translationKey = parts.slice(1).join(".");
+        const translation = i18nSystem.translations[locale]?.[namespace]?.[translationKey];
+        if (!translation) return key;
+        let value = translation.value;
+        for (const param in params) {
+          value = value.replace(`{${param}}`, params[param]);
+        }
+        return value;
+      };
+      i18nSystem.t = t;
+      i18nSystem.getLocales = () => locales;
+      i18nSystem.getNamespaces = () => namespaces;
+      i18nSystem.hasTranslation = (key, locale) => Boolean(i18nSystem.translations[locale]?.[key.split(".")[0]]?.[key.split(".").slice(1).join(".")]);
+      window.__deepNestI18n = i18nSystem;
+    }, [depth]);
     if (depth <= 0) return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
     return /* @__PURE__ */ import_react.default.createElement("div", { style: { display: "contents" } }, /* @__PURE__ */ import_react.default.createElement("span", { style: { display: "contents" } }, /* @__PURE__ */ import_react.default.createElement(DeepNest, { depth: depth - 1 }, children)));
   }
@@ -16415,11 +16781,12 @@
       )), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-apps-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(AppsIcon, { width: 16, height: 16 }) }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-notifications", icon: /* @__PURE__ */ import_react3.default.createElement(NotificationsIcon, { width: 16, height: 16 }), notification: true }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-settings-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(SettingsIcon, { width: 16, height: 16 }) }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-help-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(HelpIcon, { width: 16, height: 16 }) }))
     ))));
   }
-  function Chrome() {
+  function Chrome({ renderCounter = 0 }) {
     return /* @__PURE__ */ import_react3.default.createElement(ChromeOuter, null, /* @__PURE__ */ import_react3.default.createElement(ChromeContainer, null, /* @__PURE__ */ import_react3.default.createElement(ChromeWrapper, null, /* @__PURE__ */ import_react3.default.createElement(ChromeInner, null, /* @__PURE__ */ import_react3.default.createElement(
       ChromeLayout,
       {
         "data-testid": "default-chrome",
+        "data-render-counter": renderCounter,
         style: {
           position: "fixed",
           top: 0,
@@ -16433,9 +16800,10 @@
           zIndex: 200
         }
       },
-      /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react3.default.createElement("div", { style: { flex: 1, padding: "16px 8px", overflowY: "auto" } }, /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 2 }, /* @__PURE__ */ import_react3.default.createElement(AccountSwitcher, null), /* @__PURE__ */ import_react3.default.createElement(PrimaryNav, null), /* @__PURE__ */ import_react3.default.createElement(ShortcutsNav, null), /* @__PURE__ */ import_react3.default.createElement(WorkloadsNav, null), /* @__PURE__ */ import_react3.default.createElement(DeveloperNav, null))))
+      /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react3.default.createElement("div", { style: { flex: 1, padding: "16px 8px", overflowY: "auto" } }, /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 2 }, /* @__PURE__ */ import_react3.default.createElement(AccountSwitcher, null), /* @__PURE__ */ import_react3.default.createElement(PrimaryNav, null), /* @__PURE__ */ import_react3.default.createElement(ShortcutsNav, null), /* @__PURE__ */ import_react3.default.createElement(WorkloadsNav, null), /* @__PURE__ */ import_react3.default.createElement(DeveloperNav, null)), /* @__PURE__ */ import_react3.default.createElement("div", { "data-chrome-render": renderCounter, style: { display: "none" } }, "Render: ", renderCounter)))
     ), /* @__PURE__ */ import_react3.default.createElement(ChromeHeaderToolbar, null)))));
   }
+  var Chrome_default = (0, import_react3.memo)(Chrome);
 
   // src/components/CustomerDetailsPage.jsx
   var import_react5 = __toESM(require_react());
@@ -16986,13 +17354,15 @@
     ];
     return /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, modals.map((id) => /* @__PURE__ */ import_react5.default.createElement(DeepNest, { key: id, depth: 3 }, /* @__PURE__ */ import_react5.default.createElement("div", { "data-testid": id }))));
   }
-  function CustomerDetailsPage({ customer, subscriptions, payments, invoices }) {
+  function CustomerDetailsPage({ customer, subscriptions, payments, invoices, renderCounter = 0 }) {
     return /* @__PURE__ */ import_react5.default.createElement(PageOuter, null, /* @__PURE__ */ import_react5.default.createElement(PageContainer, null, /* @__PURE__ */ import_react5.default.createElement(PageWrapper, null, /* @__PURE__ */ import_react5.default.createElement(PageInner, null, /* @__PURE__ */ import_react5.default.createElement(
       PageLayout,
       {
         "data-testid": "product-boundary-customer-details-page",
+        "data-render-counter": renderCounter,
         style: { paddingTop: "60px" }
       },
+      /* @__PURE__ */ import_react5.default.createElement("div", { "data-content-render": renderCounter, style: { display: "none" } }, "Render: ", renderCounter),
       /* @__PURE__ */ import_react5.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react5.default.createElement(CustomerHeader, { customer })),
       /* @__PURE__ */ import_react5.default.createElement(
         "div",
@@ -17012,6 +17382,7 @@
       /* @__PURE__ */ import_react5.default.createElement(ModalPlaceholders, null)
     )))));
   }
+  var CustomerDetailsPage_default = (0, import_react5.memo)(CustomerDetailsPage);
 
   // src/components/Workbench.jsx
   var import_react6 = __toESM(require_react());
@@ -17611,6 +17982,7 @@
       /* @__PURE__ */ import_react6.default.createElement("div", { "data-testid": "wb-Inspector-FollowPreferenceSwitch", style: { display: "none" } })
     );
   }
+  var Workbench_default = (0, import_react6.memo)(Workbench);
 
   // src/App.jsx
   var baseCustomerData = {
@@ -17675,13 +18047,13 @@
   function WorldRootLayout({ children }) {
     return /* @__PURE__ */ import_react7.default.createElement("div", { "data-testid": "world-root" }, children);
   }
-  function ControlPanel({ onRerenderAll, onRerenderContent, onRerenderChrome, onToggleTheme, theme, renderCount }) {
+  function ControlPanel({ onRemountAll, onRerenderAll, onRerenderContent, onRerenderChrome }) {
     return /* @__PURE__ */ import_react7.default.createElement("div", { style: {
       position: "fixed",
       top: 0,
       left: 0,
       right: 0,
-      backgroundColor: theme === "dark" ? "#1a1f36" : "#635bff",
+      backgroundColor: "#635bff",
       color: "#fff",
       padding: "8px 16px",
       display: "flex",
@@ -17690,11 +18062,11 @@
       zIndex: 1e4,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       fontSize: "13px"
-    } }, /* @__PURE__ */ import_react7.default.createElement("span", { style: { fontWeight: 600 } }, "Re-render Controls:"), /* @__PURE__ */ import_react7.default.createElement(
+    } }, /* @__PURE__ */ import_react7.default.createElement("span", { style: { fontWeight: 600 } }, "Controls:"), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
-        "data-testid": "rerender-all-btn",
-        onClick: onRerenderAll,
+        "data-testid": "remount-all-btn",
+        onClick: onRemountAll,
         style: {
           backgroundColor: "#fff",
           color: "#635bff",
@@ -17705,7 +18077,23 @@
           fontWeight: 500
         }
       },
-      "Re-render ALL"
+      "Remount ALL"
+    ), /* @__PURE__ */ import_react7.default.createElement(
+      "button",
+      {
+        "data-testid": "rerender-all-btn",
+        onClick: onRerenderAll,
+        style: {
+          backgroundColor: "rgba(255,255,255,0.2)",
+          color: "#fff",
+          border: "1px solid rgba(255,255,255,0.3)",
+          padding: "6px 12px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          fontWeight: 500
+        }
+      },
+      "Rerender All"
     ), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
@@ -17721,7 +18109,7 @@
           fontWeight: 500
         }
       },
-      "Re-render Content"
+      "Rerender Content"
     ), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
@@ -17737,79 +18125,54 @@
           fontWeight: 500
         }
       },
-      "Re-render Chrome"
-    ), /* @__PURE__ */ import_react7.default.createElement(
-      "button",
-      {
-        "data-testid": "toggle-theme-btn",
-        onClick: onToggleTheme,
-        style: {
-          backgroundColor: "rgba(255,255,255,0.2)",
-          color: "#fff",
-          border: "1px solid rgba(255,255,255,0.3)",
-          padding: "6px 12px",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontWeight: 500
-        }
-      },
-      "Toggle Theme"
-    ), /* @__PURE__ */ import_react7.default.createElement("span", { style: { marginLeft: "auto", opacity: 0.8 } }, "Render count: ", renderCount));
+      "Rerender Chrome"
+    ));
   }
   function App() {
     const [globalKey, setGlobalKey] = (0, import_react7.useState)(0);
-    const [contentKey, setContentKey] = (0, import_react7.useState)(0);
-    const [chromeKey, setChromeKey] = (0, import_react7.useState)(0);
-    const [theme, setTheme] = (0, import_react7.useState)("light");
-    const [renderCount, setRenderCount] = (0, import_react7.useState)(0);
-    const customerData = {
+    const [localCounter, setLocalCounter] = (0, import_react7.useState)(0);
+    const [chromeCounter, setChromeCounter] = (0, import_react7.useState)(0);
+    const [contentCounter, setContentCounter] = (0, import_react7.useState)(0);
+    const customerData = (0, import_react7.useMemo)(() => ({
       ...baseCustomerData,
-      _renderKey: contentKey,
-      _theme: theme
-    };
-    const handleRerenderAll = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering FULL app re-render (unmount/remount)...");
+      _renderCounter: contentCounter
+    }), [contentCounter]);
+    const handleRemountAll = (0, import_react7.useCallback)(() => {
+      console.log("\u{1F504} Triggering FULL app REMOUNT (unmount + mount)...");
       setGlobalKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+    }, []);
+    const handleRerenderAll = (0, import_react7.useCallback)(() => {
+      console.log("\u{1F504} Triggering App rerender (diff only, no DOM changes)...");
+      setLocalCounter((c) => c + 1);
     }, []);
     const handleRerenderContent = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering CONTENT area re-render...");
-      setContentKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+      console.log("\u{1F504} Triggering CONTENT rerender (with DOM changes)...");
+      setContentCounter((c) => c + 1);
     }, []);
     const handleRerenderChrome = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering CHROME re-render...");
-      setChromeKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+      console.log("\u{1F504} Triggering CHROME rerender (with DOM changes)...");
+      setChromeCounter((c) => c + 1);
     }, []);
-    const handleToggleTheme = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering THEME toggle...");
-      setTheme((t) => t === "light" ? "dark" : "light");
-      setRenderCount((c) => c + 1);
-    }, []);
-    const bgColor = theme === "dark" ? "#0a0e1a" : "#f6f8fa";
     return /* @__PURE__ */ import_react7.default.createElement(AppOuter, { key: globalKey }, /* @__PURE__ */ import_react7.default.createElement(AppContainer, null, /* @__PURE__ */ import_react7.default.createElement(AppWrapper, null, /* @__PURE__ */ import_react7.default.createElement(AppInner, null, /* @__PURE__ */ import_react7.default.createElement(
       ControlPanel,
       {
+        onRemountAll: handleRemountAll,
         onRerenderAll: handleRerenderAll,
         onRerenderContent: handleRerenderContent,
-        onRerenderChrome: handleRerenderChrome,
-        onToggleTheme: handleToggleTheme,
-        theme,
-        renderCount
+        onRerenderChrome: handleRerenderChrome
       }
     ), /* @__PURE__ */ import_react7.default.createElement(AppLayout, { style: {
       display: "flex",
       minHeight: "100vh",
-      backgroundColor: bgColor,
+      backgroundColor: "#f6f8fa",
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       paddingTop: "44px"
       // Account for fixed control panel
-    } }, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Chrome, { key: chromeKey, theme })), /* @__PURE__ */ import_react7.default.createElement(MainContentOuter, null, /* @__PURE__ */ import_react7.default.createElement(MainContentContainer, null, /* @__PURE__ */ import_react7.default.createElement(MainContentWrapper, null, /* @__PURE__ */ import_react7.default.createElement(MainContentInner, null, /* @__PURE__ */ import_react7.default.createElement(MainContentLayout, { style: {
+    } }, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Chrome_default, { renderCounter: chromeCounter })), /* @__PURE__ */ import_react7.default.createElement(MainContentOuter, null, /* @__PURE__ */ import_react7.default.createElement(MainContentContainer, null, /* @__PURE__ */ import_react7.default.createElement(MainContentWrapper, null, /* @__PURE__ */ import_react7.default.createElement(MainContentInner, null, /* @__PURE__ */ import_react7.default.createElement(MainContentLayout, { style: {
       flex: 1,
       marginLeft: "240px",
       paddingBottom: "300px"
-    } }, /* @__PURE__ */ import_react7.default.createElement(WorldRootOuter, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootContainer, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootWrapper, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootInner, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootLayout, null, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(CustomerDetailsPage, { key: contentKey, customer: customerData, theme })))))))))))), /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Workbench, { customerId: customerData.id, theme })))))));
+    } }, /* @__PURE__ */ import_react7.default.createElement(WorldRootOuter, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootContainer, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootWrapper, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootInner, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootLayout, null, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(CustomerDetailsPage_default, { customer: customerData, renderCounter: contentCounter })))))))))))), /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Workbench_default, { customerId: customerData.id })))))));
   }
 
   // src/index.jsx

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Text, Button, Icon, DeepNest, FlexContainer, List, ListItem, Divider } from './Wrappers';
 import {
   HomeIcon,
@@ -731,7 +731,7 @@ function ChromeHeaderToolbar() {
   );
 }
 
-export default function Chrome() {
+function Chrome({ renderCounter = 0 }) {
   return (
     <ChromeOuter>
       <ChromeContainer>
@@ -739,6 +739,7 @@ export default function Chrome() {
           <ChromeInner>
             <ChromeLayout
               data-testid="default-chrome"
+              data-render-counter={renderCounter}
               style={{
                 position: 'fixed',
                 top: 0,
@@ -761,6 +762,10 @@ export default function Chrome() {
                     <WorkloadsNav />
                     <DeveloperNav />
                   </DeepNest>
+                  {/* Hidden element that changes on rerender to force DOM commit */}
+                  <div data-chrome-render={renderCounter} style={{ display: 'none' }}>
+                    Render: {renderCounter}
+                  </div>
                 </div>
               </DeepNest>
             </ChromeLayout>
@@ -771,3 +776,5 @@ export default function Chrome() {
     </ChromeOuter>
   );
 }
+
+export default memo(Chrome);
