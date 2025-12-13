@@ -1,27 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-const debugDOM = document.querySelector('#debug');
+const ARTIFICIAL_DELAY = 1;
+const LIST_LENGTH = 500;
 
-function log(msg) {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  debugDOM.appendChild(div);
-}
-
-// Goal: have a high pri update override a low pri one
-
-function SlowList({ count, num }) {
+const SlowList = React.memo(({ count, num }) => {
   const items = [];
   for (let i = 0; i < count; i++) {
     items.push(<SlowItem key={i} index={i} num={num} />);
   }
   return <ul>{items}</ul>;
-}
+});
 
 function SlowItem({ index, num }) {
-  let now = performance.now();
-  while (performance.now() - now < 2) {}
+  let startTime = performance.now();
+  while (performance.now() - startTime < ARTIFICIAL_DELAY) {
+    // Do nothing for 1 ms per item to emulate extremely slow code
+  }
   return (
     <li>
       {index}: ({num})
@@ -29,24 +24,18 @@ function SlowItem({ index, num }) {
   );
 }
 
-let lastTime = null;
-
 export default function App() {
   const [value, setValue] = React.useState('1');
-  const [num, setNum] = React.useState(1);
+  const num = parseInt(React.useDeferredValue(value));
 
   function onChange(e) {
     setValue(e.target.value);
-
-    React.startTransition(() => {
-      setNum(parseInt(e.target.value));
-    });
   }
 
   return (
     <div>
       <input value={value} onChange={onChange} />
-      <SlowList num={num} count={100} />
+      <SlowList num={num} count={LIST_LENGTH} />
     </div>
   );
 }

@@ -9,6 +9,9 @@
 
 // Debug timing instrumentation for React lifecycle phases
 
+// Set to true to enable debug logging
+const DEBUG_TIMING_ENABLED = true;
+
 // ============================================================================
 // RENDER/COMMIT TRACKING (existing)
 // ============================================================================
@@ -21,6 +24,7 @@ let isInitialMount = true;
 export function logRenderStart(isSync: boolean): void {
   renderCount++;
   currentRenderStart = performance.now();
+  if (!DEBUG_TIMING_ENABLED) return;
   console.log(
     `%c[React Timing] Render #${renderCount} START ${isSync ? '(sync)' : '(concurrent)'}`,
     'color: #61dafb; font-weight: bold;'
@@ -28,6 +32,7 @@ export function logRenderStart(isSync: boolean): void {
 }
 
 export function logRenderComplete(): void {
+  if (!DEBUG_TIMING_ENABLED) return;
   const duration = performance.now() - currentRenderStart;
   console.log(
     `%c[React Timing] Render #${renderCount} COMPLETE: ${duration.toFixed(2)}ms`,
@@ -37,6 +42,7 @@ export function logRenderComplete(): void {
 
 export function logCommitStart(): void {
   currentCommitStart = performance.now();
+  if (!DEBUG_TIMING_ENABLED) return;
   const phase = isInitialMount ? 'MOUNT' : 'UPDATE';
   console.log(
     `%c[React Timing] Commit #${renderCount} START (${phase})`,
@@ -45,9 +51,15 @@ export function logCommitStart(): void {
 }
 
 export function logCommitComplete(): void {
+  // After first commit, subsequent ones are updates
+  const wasInitialMount = isInitialMount;
+  isInitialMount = false;
+
+  if (!DEBUG_TIMING_ENABLED) return;
+
   const commitDuration = performance.now() - currentCommitStart;
   const totalDuration = performance.now() - currentRenderStart;
-  const phase = isInitialMount ? 'MOUNT' : 'UPDATE';
+  const phase = wasInitialMount ? 'MOUNT' : 'UPDATE';
 
   console.log(
     `%c[React Timing] Commit #${renderCount} COMPLETE (${phase})`,
@@ -81,9 +93,6 @@ export function logCommitComplete(): void {
     `%c[React Timing] ─────────────────────────────────`,
     'color: #888;'
   );
-
-  // After first commit, subsequent ones are updates
-  isInitialMount = false;
 }
 
 export function logBeginWork(fiberTag: number, fiberType: mixed): void {
@@ -173,6 +182,25 @@ function getSuspendedReasonName(reason: SuspendedReason): string {
 
 // Called when a new update is scheduled (scheduleUpdateOnFiber)
 export function logUpdateScheduled(lanes: number): number {
+  // Check if there's already an active (non-committed, non-rendering) update with overlapping lanes
+  // This handles batched updates - multiple setState calls that get merged
+  for (const [existingId, info] of activeUpdates) {
+    if (info.status === 'scheduled' && (info.lanes & lanes) !== 0) {
+      // Merge lanes into existing update
+      info.lanes = info.lanes | lanes;
+      info.priority = getLanePriorityName(info.lanes);
+
+      if (DEBUG_TIMING_ENABLED) {
+        console.log(
+          `%c[Update #${existingId}] BATCHED %c(merged with existing scheduled update)`,
+          'color: #9c27b0;',
+          'color: #ce93d8;'
+        );
+      }
+      return existingId;
+    }
+  }
+
   const id = ++updateIdCounter;
   const priority = getLanePriorityName(lanes);
 
@@ -190,15 +218,17 @@ export function logUpdateScheduled(lanes: number): number {
 
   activeUpdates.set(id, info);
 
-  console.log(
-    `%c[Update #${id}] SCHEDULED %c${priority}`,
-    'color: #9c27b0; font-weight: bold;',
-    'color: #e91e63; font-weight: bold;'
-  );
-  console.log(
-    `%c[Update #${id}]   lanes: 0b${lanes.toString(2).padStart(31, '0')}`,
-    'color: #9c27b0;'
-  );
+  if (DEBUG_TIMING_ENABLED) {
+    console.log(
+      `%c[Update #${id}] SCHEDULED %c${priority}`,
+      'color: #9c27b0; font-weight: bold;',
+      'color: #e91e63; font-weight: bold;'
+    );
+    console.log(
+      `%c[Update #${id}]   lanes: 0b${lanes.toString(2).padStart(31, '0')}`,
+      'color: #9c27b0;'
+    );
+  }
 
   return id;
 }
@@ -238,11 +268,13 @@ export function logUpdateRenderStart(lanes: number): void {
 
   update.status = 'rendering';
 
-  console.log(
-    `%c[Update #${update.id}] RENDER_START %c${update.priority}`,
-    'color: #2196f3; font-weight: bold;',
-    'color: #e91e63;'
-  );
+  if (DEBUG_TIMING_ENABLED) {
+    console.log(
+      `%c[Update #${update.id}] RENDER_START %c${update.priority}`,
+      'color: #2196f3; font-weight: bold;',
+      'color: #e91e63;'
+    );
+  }
 }
 
 // Called when render is interrupted by a higher priority update
@@ -252,23 +284,25 @@ export function logUpdateInterrupted(lanes: number, newLanes: number): void {
     update.interruptCount++;
     update.status = 'scheduled'; // Back to scheduled, will be retried
 
-    console.log(
-      `%c[Update #${update.id}] INTERRUPTED %c(preempted by higher priority)`,
-      'color: #ff5722; font-weight: bold;',
-      'color: #ff9800;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   was: ${update.priority}`,
-      'color: #ff5722;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   by:  ${getLanePriorityName(newLanes)}`,
-      'color: #ff5722;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   interrupt count: ${update.interruptCount}`,
-      'color: #ff5722;'
-    );
+    if (DEBUG_TIMING_ENABLED) {
+      console.log(
+        `%c[Update #${update.id}] INTERRUPTED %c(preempted by higher priority)`,
+        'color: #ff5722; font-weight: bold;',
+        'color: #ff9800;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   was: ${update.priority}`,
+        'color: #ff5722;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   by:  ${getLanePriorityName(newLanes)}`,
+        'color: #ff5722;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   interrupt count: ${update.interruptCount}`,
+        'color: #ff5722;'
+      );
+    }
   }
 }
 
@@ -279,15 +313,17 @@ export function logUpdateYielded(lanes: number): void {
     update.yieldCount++;
     update.status = 'yielded';
 
-    console.log(
-      `%c[Update #${update.id}] YIELDED %c(giving control to main thread)`,
-      'color: #ff9800; font-weight: bold;',
-      'color: #ffc107;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   yield count: ${update.yieldCount}`,
-      'color: #ff9800;'
-    );
+    if (DEBUG_TIMING_ENABLED) {
+      console.log(
+        `%c[Update #${update.id}] YIELDED %c(giving control to main thread)`,
+        'color: #ff9800; font-weight: bold;',
+        'color: #ffc107;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   yield count: ${update.yieldCount}`,
+        'color: #ff9800;'
+      );
+    }
   }
 }
 
@@ -297,11 +333,13 @@ export function logUpdateResumed(lanes: number): void {
   if (update) {
     update.status = 'rendering';
 
-    console.log(
-      `%c[Update #${update.id}] RESUMED %c(continuing render)`,
-      'color: #4caf50; font-weight: bold;',
-      'color: #8bc34a;'
-    );
+    if (DEBUG_TIMING_ENABLED) {
+      console.log(
+        `%c[Update #${update.id}] RESUMED %c(continuing render)`,
+        'color: #4caf50; font-weight: bold;',
+        'color: #8bc34a;'
+      );
+    }
   }
 }
 
@@ -312,26 +350,29 @@ export function logUpdateSuspended(lanes: number, reason: SuspendedReason): void
     update.suspendCount++;
     update.status = 'suspended';
 
-    const reasonName = getSuspendedReasonName(reason);
+    if (DEBUG_TIMING_ENABLED) {
+      const reasonName = getSuspendedReasonName(reason);
 
-    console.log(
-      `%c[Update #${update.id}] SUSPENDED %c${reasonName}`,
-      'color: #9c27b0; font-weight: bold;',
-      'color: #ce93d8;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   suspend count: ${update.suspendCount}`,
-      'color: #9c27b0;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   waiting for async data...`,
-      'color: #9c27b0; font-style: italic;'
-    );
+      console.log(
+        `%c[Update #${update.id}] SUSPENDED %c${reasonName}`,
+        'color: #9c27b0; font-weight: bold;',
+        'color: #ce93d8;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   suspend count: ${update.suspendCount}`,
+        'color: #9c27b0;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   waiting for async data...`,
+        'color: #9c27b0; font-style: italic;'
+      );
+    }
   }
 }
 
 // Called when a suspended render is pinged (data arrived)
 export function logUpdatePinged(lanes: number): void {
+  if (!DEBUG_TIMING_ENABLED) return;
   const update = findUpdateByLanes(lanes);
   if (update) {
     console.log(
@@ -346,49 +387,52 @@ export function logUpdatePinged(lanes: number): void {
 export function logUpdateCommitted(lanes: number): void {
   const update = findUpdateByLanes(lanes);
   if (update) {
-    const duration = performance.now() - update.startTime;
     update.status = 'committed';
 
-    console.log(
-      `%c[Update #${update.id}] COMMITTED TO DOM`,
-      'color: #4caf50; font-weight: bold;'
-    );
-    console.log(
-      `%c[Update #${update.id}] ═══════════════════════════════════════`,
-      'color: #888;'
-    );
-    console.log(
-      `%c[Update #${update.id}] Summary:`,
-      'color: #4caf50; font-weight: bold;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   Priority:    ${update.priority}`,
-      'color: #4caf50;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   Total time:  ${duration.toFixed(2)}ms`,
-      'color: #4caf50;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   Suspends:    ${update.suspendCount}`,
-      'color: #4caf50;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   Yields:      ${update.yieldCount}`,
-      'color: #4caf50;'
-    );
-    console.log(
-      `%c[Update #${update.id}]   Interrupts:  ${update.interruptCount}`,
-      'color: #4caf50;'
-    );
+    if (DEBUG_TIMING_ENABLED) {
+      const duration = performance.now() - update.startTime;
 
-    // Log component render counts
-    logComponentRenderSummary(update);
+      console.log(
+        `%c[Update #${update.id}] COMMITTED TO DOM`,
+        'color: #4caf50; font-weight: bold;'
+      );
+      console.log(
+        `%c[Update #${update.id}] ═══════════════════════════════════════`,
+        'color: #888;'
+      );
+      console.log(
+        `%c[Update #${update.id}] Summary:`,
+        'color: #4caf50; font-weight: bold;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   Priority:    ${update.priority}`,
+        'color: #4caf50;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   Total time:  ${duration.toFixed(2)}ms`,
+        'color: #4caf50;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   Suspends:    ${update.suspendCount}`,
+        'color: #4caf50;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   Yields:      ${update.yieldCount}`,
+        'color: #4caf50;'
+      );
+      console.log(
+        `%c[Update #${update.id}]   Interrupts:  ${update.interruptCount}`,
+        'color: #4caf50;'
+      );
 
-    console.log(
-      `%c[Update #${update.id}] ═══════════════════════════════════════`,
-      'color: #888;'
-    );
+      // Log component render counts
+      logComponentRenderSummary(update);
+
+      console.log(
+        `%c[Update #${update.id}] ═══════════════════════════════════════`,
+        'color: #888;'
+      );
+    }
 
     // Clean up completed update
     activeUpdates.delete(update.id);
@@ -397,6 +441,7 @@ export function logUpdateCommitted(lanes: number): void {
 
 // Called when prepareFreshStack is called (indicates restart/rebase)
 export function logUpdateRestarted(oldLanes: number, newLanes: number): void {
+  if (!DEBUG_TIMING_ENABLED) return;
   if (oldLanes !== 0 && oldLanes !== newLanes) {
     const oldUpdate = findUpdateByLanes(oldLanes);
     if (oldUpdate) {
@@ -416,10 +461,17 @@ export function logUpdateRestarted(oldLanes: number, newLanes: number): void {
   }
 }
 
-// Helper to find update by lanes
+// Helper to find update by lanes (matches if lanes overlap, not exact match)
 function findUpdateByLanes(lanes: number): UpdateInfo | null {
+  // First try exact match
   for (const [id, info] of activeUpdates) {
     if (info.lanes === lanes) {
+      return info;
+    }
+  }
+  // Then try overlapping lanes (for batched updates where lanes got merged)
+  for (const [id, info] of activeUpdates) {
+    if ((info.lanes & lanes) !== 0) {
       return info;
     }
   }
