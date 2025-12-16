@@ -3537,9 +3537,6 @@ function commitRoot(
     markCommitStarted(lanes);
   }
 
-  // Debug timing: log commit start
-  debugLogCommitStart();
-
   if (finishedWork === null) {
     if (enableSchedulingProfiler) {
       markCommitStopped();
@@ -3774,6 +3771,10 @@ function commitRoot(
   }
 
   pendingEffectsStatus = PENDING_MUTATION_PHASE;
+
+  // Debug timing: log commit start right before actual DOM work
+  debugLogCommitStart();
+
   if (enableViewTransition && willStartViewTransition) {
     if (enableProfilerTimer && enableComponentPerformanceTrack) {
       startAnimating(lanes);

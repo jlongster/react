@@ -2981,6 +2981,8 @@
       var renderCount = 0;
       var currentRenderStart = 0;
       var currentCommitStart = 0;
+      var currentCommitEnd = 0;
+      var currentPassiveEffectsStart = 0;
       var isInitialMount = true;
       function logRenderStart(isSync) {
         renderCount++;
@@ -3031,22 +3033,22 @@
       }
       function logUpdateRenderStart(lanes) {
         currentRenderingLanes = lanes;
-        var update = null, _iterator = _createForOfIteratorHelper(activeUpdates), _step;
+        var update = null, _iterator2 = _createForOfIteratorHelper(activeUpdates), _step2;
         try {
-          for (_iterator.s(); !(_step = _iterator.n()).done; ) {
-            var info = _step.value[1];
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done; ) {
+            var info = _step2.value[1];
             if (info.lanes === lanes && "committed" !== info.status) {
               update = info;
               break;
             }
           }
         } catch (err) {
-          _iterator.e(err);
+          _iterator2.e(err);
         } finally {
-          _iterator.f();
+          _iterator2.f();
         }
-        update || (_iterator = ++updateIdCounter, update = {
-          id: _iterator,
+        update || (_iterator2 = ++updateIdCounter, update = {
+          id: _iterator2,
           priority: getLanePriorityName(lanes),
           lanes,
           startTime: performance.now(),
@@ -3055,7 +3057,7 @@
           yieldCount: 0,
           interruptCount: 0,
           componentRenderCounts: /* @__PURE__ */ new Map()
-        }, activeUpdates.set(_iterator, update));
+        }, activeUpdates.set(_iterator2, update));
         update.status = "rendering";
         console.log(
           "%c[Update #" + update.id + "] RENDER_START %c" + update.priority,
@@ -3083,16 +3085,28 @@
           );
       }
       function findUpdateByLanes(lanes) {
-        var _iterator2 = _createForOfIteratorHelper(activeUpdates), _step2;
+        var _iterator3 = _createForOfIteratorHelper(activeUpdates), _step3;
         try {
-          for (_iterator2.s(); !(_step2 = _iterator2.n()).done; ) {
-            var info = _step2.value[1];
+          for (_iterator3.s(); !(_step3 = _iterator3.n()).done; ) {
+            var info = _step3.value[1];
             if (info.lanes === lanes) return info;
           }
         } catch (err) {
-          _iterator2.e(err);
+          _iterator3.e(err);
         } finally {
-          _iterator2.f();
+          _iterator3.f();
+        }
+        _iterator3 = _createForOfIteratorHelper(activeUpdates);
+        var _step4;
+        try {
+          for (_iterator3.s(); !(_step4 = _iterator3.n()).done; ) {
+            var info$28 = _step4.value[1];
+            if (0 !== (info$28.lanes & lanes)) return info$28;
+          }
+        } catch (err$29) {
+          _iterator3.e(err$29);
+        } finally {
+          _iterator3.f();
         }
         return null;
       }
@@ -3116,10 +3130,10 @@
             "color: #00bcd4; font-weight: bold;"
           );
           componentCounts = _createForOfIteratorHelper(componentCounts);
-          var _step3;
+          var _step5;
           try {
-            for (componentCounts.s(); !(_step3 = componentCounts.n()).done; ) {
-              var _step3$value = _step3.value, name = _step3$value[0], count = _step3$value[1], bar = "\u2588".repeat(Math.min(count, 20));
+            for (componentCounts.s(); !(_step5 = componentCounts.n()).done; ) {
+              var _step5$value = _step5.value, name = _step5$value[0], count = _step5$value[1], bar = "\u2588".repeat(Math.min(count, 20));
               console.log(
                 "%c[Update #" + update.id + "]     " + name + ": " + count + " " + bar,
                 "color: #00bcd4;"
@@ -3827,18 +3841,18 @@
         globalMostRecentTransitionTime = now();
         "object" === typeof returnValue && null !== returnValue && "function" === typeof returnValue.then && entangleAsyncAction(transition, returnValue);
         if (null !== entangledTransitionTypes)
-          for (var root$31 = firstScheduledRoot; null !== root$31; )
-            queueTransitionTypes(root$31, entangledTransitionTypes), root$31 = root$31.next;
-        root$31 = transition.types;
-        if (null !== root$31) {
-          for (var root$32 = firstScheduledRoot; null !== root$32; )
-            queueTransitionTypes(root$32, root$31), root$32 = root$32.next;
+          for (var root$35 = firstScheduledRoot; null !== root$35; )
+            queueTransitionTypes(root$35, entangledTransitionTypes), root$35 = root$35.next;
+        root$35 = transition.types;
+        if (null !== root$35) {
+          for (var root$36 = firstScheduledRoot; null !== root$36; )
+            queueTransitionTypes(root$36, root$35), root$36 = root$36.next;
           if (0 !== currentEntangledLane) {
-            root$32 = entangledTransitionTypes;
-            null === root$32 && (root$32 = entangledTransitionTypes = []);
-            for (var i = 0; i < root$31.length; i++) {
-              var transitionType = root$31[i];
-              -1 === root$32.indexOf(transitionType) && root$32.push(transitionType);
+            root$36 = entangledTransitionTypes;
+            null === root$36 && (root$36 = entangledTransitionTypes = []);
+            for (var i = 0; i < root$35.length; i++) {
+              var transitionType = root$35[i];
+              -1 === root$36.indexOf(transitionType) && root$36.push(transitionType);
             }
           }
         }
@@ -4916,7 +4930,7 @@
         if (null === baseQueue) hook.memoizedState = pendingQueue;
         else {
           current = baseQueue.next;
-          var newBaseQueueFirst = baseFirst = null, newBaseQueueLast = null, update = current, didReadFromEntangledAsyncAction$68 = false;
+          var newBaseQueueFirst = baseFirst = null, newBaseQueueLast = null, update = current, didReadFromEntangledAsyncAction$72 = false;
           do {
             var updateLane = update.lane & -536870913, shouldSkipUpdate = updateLane !== update.lane ? (workInProgressRootRenderLanes & updateLane) !== updateLane : (renderLanes & updateLane) !== updateLane;
             if (64 === updateLane) {
@@ -4954,10 +4968,10 @@
                   hasEagerState: update.hasEagerState,
                   eagerState: update.eagerState,
                   next: null
-                }), updateLane === currentEntangledLane && (didReadFromEntangledAsyncAction$68 = true);
+                }), updateLane === currentEntangledLane && (didReadFromEntangledAsyncAction$72 = true);
               else if ((renderLanes & scheduledGesture) === scheduledGesture) {
                 update = update.next;
-                scheduledGesture === currentEntangledLane && (didReadFromEntangledAsyncAction$68 = true);
+                scheduledGesture === currentEntangledLane && (didReadFromEntangledAsyncAction$72 = true);
                 continue;
               } else
                 updateLane = {
@@ -4976,7 +4990,7 @@
             update = update.next;
           } while (null !== update && update !== current);
           null === newBaseQueueLast ? baseFirst = pendingQueue : newBaseQueueLast.next = newBaseQueueFirst;
-          if (!objectIs(pendingQueue, hook.memoizedState) && (didReceiveUpdate = true, didReadFromEntangledAsyncAction$68 && (reducer = currentEntangledActionThenable, null !== reducer)))
+          if (!objectIs(pendingQueue, hook.memoizedState) && (didReceiveUpdate = true, didReadFromEntangledAsyncAction$72 && (reducer = currentEntangledActionThenable, null !== reducer)))
             throw reducer;
           hook.memoizedState = pendingQueue;
           hook.baseState = baseFirst;
@@ -5142,8 +5156,8 @@
         } else
           try {
             prevTransition = action(prevState, payload), handleActionReturnValue(actionQueue, node, prevTransition);
-          } catch (error$75) {
-            onActionError(actionQueue, node, error$75);
+          } catch (error$79) {
+            onActionError(actionQueue, node, error$79);
           }
       }
       function handleActionReturnValue(actionQueue, node, returnValue) {
@@ -5557,10 +5571,10 @@
             case 3:
               var lane = requestUpdateLane();
               fiber = createUpdate(lane);
-              var root$78 = enqueueUpdate(provider, fiber, lane);
-              null !== root$78 && (scheduleUpdateOnFiber(root$78, provider, lane), entangleTransitions(root$78, provider, lane));
+              var root$82 = enqueueUpdate(provider, fiber, lane);
+              null !== root$82 && (scheduleUpdateOnFiber(root$82, provider, lane), entangleTransitions(root$82, provider, lane));
               provider = createCache();
-              null !== seedKey && void 0 !== seedKey && null !== root$78 && provider.data.set(seedKey, seedValue);
+              null !== seedKey && void 0 !== seedKey && null !== root$82 && provider.data.set(seedKey, seedValue);
               fiber.payload = { cache: provider };
               return;
           }
@@ -6036,8 +6050,8 @@
         }
         if (Component = Component.defaultProps) {
           newProps === baseProps && (newProps = assign({}, newProps));
-          for (var propName$82 in Component)
-            void 0 === newProps[propName$82] && (newProps[propName$82] = Component[propName$82]);
+          for (var propName$86 in Component)
+            void 0 === newProps[propName$86] && (newProps[propName$86] = Component[propName$86]);
         }
         return newProps;
       }
@@ -6054,9 +6068,9 @@
         try {
           var onUncaughtError = root3.onUncaughtError;
           onUncaughtError(errorInfo.value, { componentStack: errorInfo.stack });
-        } catch (e$83) {
+        } catch (e$87) {
           setTimeout(function() {
-            throw e$83;
+            throw e$87;
           });
         }
       }
@@ -6067,9 +6081,9 @@
             componentStack: errorInfo.stack,
             errorBoundary: 1 === boundary.tag ? boundary.stateNode : null
           });
-        } catch (e$84) {
+        } catch (e$88) {
           setTimeout(function() {
-            throw e$84;
+            throw e$88;
           });
         }
       }
@@ -6968,9 +6982,9 @@
               return workInProgress2.flags |= 128, pushDehydratedActivitySuspenseHandler(workInProgress2), null;
             break;
           case 13:
-            var state$114 = workInProgress2.memoizedState;
-            if (null !== state$114) {
-              if (null !== state$114.dehydrated)
+            var state$118 = workInProgress2.memoizedState;
+            if (null !== state$118) {
+              if (null !== state$118.dehydrated)
                 return pushPrimaryTreeSuspenseHandler(workInProgress2), workInProgress2.flags |= 128, null;
               if (0 !== (renderLanes2 & workInProgress2.child.childLanes))
                 return updateSuspenseComponent(current, workInProgress2, renderLanes2);
@@ -6992,15 +7006,15 @@
                 renderLanes2
               );
             var didSuspendBefore = 0 !== (current.flags & 128);
-            state$114 = 0 !== (renderLanes2 & workInProgress2.childLanes);
-            state$114 || (propagateParentContextChanges(
+            state$118 = 0 !== (renderLanes2 & workInProgress2.childLanes);
+            state$118 || (propagateParentContextChanges(
               current,
               workInProgress2,
               renderLanes2,
               false
-            ), state$114 = 0 !== (renderLanes2 & workInProgress2.childLanes));
+            ), state$118 = 0 !== (renderLanes2 & workInProgress2.childLanes));
             if (didSuspendBefore) {
-              if (state$114)
+              if (state$118)
                 return updateSuspenseListComponent(
                   current,
                   workInProgress2,
@@ -7011,7 +7025,7 @@
             didSuspendBefore = workInProgress2.memoizedState;
             null !== didSuspendBefore && (didSuspendBefore.rendering = null, didSuspendBefore.tail = null, didSuspendBefore.lastEffect = null);
             pushSuspenseListContext(workInProgress2, suspenseStackCursor.current);
-            if (state$114) break;
+            if (state$118) break;
             else return null;
           case 22:
             return workInProgress2.lanes = 0, updateOffscreenComponent(
@@ -7394,11 +7408,11 @@
       function bubbleProperties(completedWork) {
         var didBailout = null !== completedWork.alternate && completedWork.alternate.child === completedWork.child, newChildLanes = 0, subtreeFlags = 0;
         if (didBailout)
-          for (var child$119 = completedWork.child; null !== child$119; )
-            newChildLanes |= child$119.lanes | child$119.childLanes, subtreeFlags |= child$119.subtreeFlags & 132120576, subtreeFlags |= child$119.flags & 132120576, child$119.return = completedWork, child$119 = child$119.sibling;
+          for (var child$123 = completedWork.child; null !== child$123; )
+            newChildLanes |= child$123.lanes | child$123.childLanes, subtreeFlags |= child$123.subtreeFlags & 132120576, subtreeFlags |= child$123.flags & 132120576, child$123.return = completedWork, child$123 = child$123.sibling;
         else
-          for (child$119 = completedWork.child; null !== child$119; )
-            newChildLanes |= child$119.lanes | child$119.childLanes, subtreeFlags |= child$119.subtreeFlags, subtreeFlags |= child$119.flags, child$119.return = completedWork, child$119 = child$119.sibling;
+          for (child$123 = completedWork.child; null !== child$123; )
+            newChildLanes |= child$123.lanes | child$123.childLanes, subtreeFlags |= child$123.subtreeFlags, subtreeFlags |= child$123.flags, child$123.return = completedWork, child$123 = child$123.sibling;
         completedWork.subtreeFlags |= subtreeFlags;
         completedWork.childLanes = newChildLanes;
         return didBailout;
@@ -7961,8 +7975,8 @@
           else if ("function" === typeof ref)
             try {
               ref(null);
-            } catch (error$154) {
-              captureCommitPhaseError(current, nearestMountedAncestor, error$154);
+            } catch (error$158) {
+              captureCommitPhaseError(current, nearestMountedAncestor, error$158);
             }
           else ref.current = null;
       }
@@ -8575,11 +8589,11 @@
                     prevState,
                     instance.__reactInternalSnapshotBeforeUpdate
                   );
-                } catch (error$152) {
+                } catch (error$156) {
                   captureCommitPhaseError(
                     finishedWork,
                     finishedWork.return,
-                    error$152
+                    error$156
                   );
                 }
               }
@@ -9220,13 +9234,13 @@
           case 22:
             hoistableRoot = null !== finishedWork.memoizedState;
             i = null !== current && null !== current.memoizedState;
-            var prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden, prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden, prevOffscreenDirectParentIsHidden$170 = offscreenDirectParentIsHidden;
+            var prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden, prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden, prevOffscreenDirectParentIsHidden$174 = offscreenDirectParentIsHidden;
             offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || hoistableRoot;
-            offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$170 || hoistableRoot;
+            offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$174 || hoistableRoot;
             offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden || i;
             recursivelyTraverseMutationEffects(root3, finishedWork, lanes);
             offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
-            offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$170;
+            offscreenDirectParentIsHidden = prevOffscreenDirectParentIsHidden$174;
             offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
             commitReconciliationEffects(finishedWork);
             flags & 8192 && (root3 = finishedWork.stateNode, root3._visibility = hoistableRoot ? root3._visibility & -2 : root3._visibility | 1, hoistableRoot && (null === current || i || offscreenSubtreeIsHidden || offscreenSubtreeWasHidden || recursivelyTraverseDisappearLayoutEffects(finishedWork)), !hoistableRoot && offscreenDirectParentIsHidden || hideOrUnhideAllChildren(finishedWork, hoistableRoot));
@@ -9288,23 +9302,23 @@
                 );
                 break;
               case 5:
-                var parent$155 = hostParentFiber.stateNode;
-                hostParentFiber.flags & 32 && (setTextContent(parent$155, ""), hostParentFiber.flags &= -33);
-                var before$156 = getHostSibling(finishedWork);
+                var parent$159 = hostParentFiber.stateNode;
+                hostParentFiber.flags & 32 && (setTextContent(parent$159, ""), hostParentFiber.flags &= -33);
+                var before$160 = getHostSibling(finishedWork);
                 insertOrAppendPlacementNode(
                   finishedWork,
-                  before$156,
-                  parent$155,
+                  before$160,
+                  parent$159,
                   parentFragmentInstances
                 );
                 break;
               case 3:
               case 4:
-                var parent$157 = hostParentFiber.stateNode.containerInfo, before$158 = getHostSibling(finishedWork);
+                var parent$161 = hostParentFiber.stateNode.containerInfo, before$162 = getHostSibling(finishedWork);
                 insertOrAppendPlacementNodeIntoContainer(
                   finishedWork,
-                  before$158,
-                  parent$157,
+                  before$162,
+                  parent$161,
                   parentFragmentInstances
                 );
                 break;
@@ -10242,7 +10256,7 @@
             if (null === nextPhase)
               recursivelyInsertNewFiber(deletions, i, parentViewTransition, 5);
             else {
-              var nextPhase$184 = deletions.flags;
+              var nextPhase$188 = deletions.flags;
               switch (deletions.tag) {
                 case 26:
                   recursivelyInsertClones(
@@ -10263,16 +10277,16 @@
                 case 5:
                   var clone = deletions.stateNode;
                   null === deletions.child ? (clone = clone.cloneNode(true), deletions.flags & 32 && (setTextContent(clone, ""), viewTransitionMutationContext = true)) : clone = clone.cloneNode(false);
-                  if (nextPhase$184 & 4) {
-                    nextPhase$184 = clone;
+                  if (nextPhase$188 & 4) {
+                    nextPhase$188 = clone;
                     var newProps = deletions.memoizedProps;
                     updateProperties(
-                      nextPhase$184,
+                      nextPhase$188,
                       deletions.type,
                       nextPhase.memoizedProps,
                       newProps
                     );
-                    nextPhase$184[internalPropsKey] = newProps;
+                    nextPhase$188[internalPropsKey] = newProps;
                   }
                   1 === visitPhase || 2 === visitPhase ? (i.appendChild(clone), unhideInstance(clone, deletions.memoizedProps), recursivelyInsertClones(deletions, clone, null, 3), viewTransitionMutationContext = true) : (i.appendChild(clone), recursivelyInsertClones(deletions, clone, null, visitPhase));
                   null !== parentViewTransition && (null === parentViewTransition.clones ? parentViewTransition.clones = [clone] : parentViewTransition.clones.push(clone));
@@ -10282,7 +10296,7 @@
                   if (null === parentViewTransition)
                     throw Error(formatProdErrorMessage(162));
                   parentViewTransition = parentViewTransition.cloneNode(false);
-                  nextPhase$184 & 4 && (parentViewTransition.nodeValue = nextPhase.memoizedProps, viewTransitionMutationContext = true);
+                  nextPhase$188 & 4 && (parentViewTransition.nodeValue = nextPhase.memoizedProps, viewTransitionMutationContext = true);
                   i.appendChild(parentViewTransition);
                   if (1 === visitPhase || 2 === visitPhase)
                     parentViewTransition.nodeValue = deletions.memoizedProps, viewTransitionMutationContext = true;
@@ -10290,7 +10304,7 @@
                 case 4:
                   break;
                 case 22:
-                  null === deletions.memoizedState ? (nextPhase = 0 === visitPhase && 0 !== (nextPhase$184 & 8192) ? 1 : visitPhase, recursivelyInsertClones(
+                  null === deletions.memoizedState ? (nextPhase = 0 === visitPhase && 0 !== (nextPhase$188 & 8192) ? 1 : visitPhase, recursivelyInsertClones(
                     deletions,
                     i,
                     parentViewTransition,
@@ -10301,8 +10315,8 @@
                   parentViewTransition = pushMutationContext();
                   clone = deletions.stateNode;
                   clone.clones = null;
-                  nextPhase$184 = 1 === visitPhase ? 2 : visitPhase;
-                  recursivelyInsertClones(deletions, i, clone, nextPhase$184);
+                  nextPhase$188 = 1 === visitPhase ? 2 : visitPhase;
+                  recursivelyInsertClones(deletions, i, clone, nextPhase$188);
                   viewTransitionMutationContext && (deletions.flags |= 4);
                   1 === visitPhase ? applyExitViewTransition(deletions) : 3 === visitPhase || 2 === visitPhase ? applyAppearingPairViewTransition(deletions) : 0 === visitPhase && (i = deletions.stateNode, nextPhase = nextPhase.memoizedProps, deletions = getViewTransitionName(
                     deletions.memoizedProps,
@@ -10481,28 +10495,52 @@
         }
       }
       function scheduleUpdateOnFiber(root3, fiber, lane) {
-        fiber = ++updateIdCounter;
-        var priority = getLanePriorityName(lane), info = {
-          id: fiber,
-          priority,
-          lanes: lane,
-          startTime: performance.now(),
-          status: "scheduled",
-          suspendCount: 0,
-          yieldCount: 0,
-          interruptCount: 0,
-          componentRenderCounts: /* @__PURE__ */ new Map()
-        };
-        activeUpdates.set(fiber, info);
-        console.log(
-          "%c[Update #" + fiber + "] SCHEDULED %c" + priority,
-          "color: #9c27b0; font-weight: bold;",
-          "color: #e91e63; font-weight: bold;"
-        );
-        console.log(
-          "%c[Update #" + fiber + "]   lanes: 0b" + lane.toString(2).padStart(31, "0"),
-          "color: #9c27b0;"
-        );
+        a: {
+          fiber = _createForOfIteratorHelper(activeUpdates);
+          var _step;
+          try {
+            for (fiber.s(); !(_step = fiber.n()).done; ) {
+              var _step$value = _step.value, existingId = _step$value[0], info$25 = _step$value[1];
+              if ("scheduled" === info$25.status && 0 !== (info$25.lanes & lane)) {
+                info$25.lanes |= lane;
+                info$25.priority = getLanePriorityName(info$25.lanes);
+                console.log(
+                  "%c[Update #" + existingId + "] BATCHED %c(merged with existing scheduled update)",
+                  "color: #9c27b0;",
+                  "color: #ce93d8;"
+                );
+                break a;
+              }
+            }
+          } catch (err) {
+            fiber.e(err);
+          } finally {
+            fiber.f();
+          }
+          _step = ++updateIdCounter;
+          _step$value = getLanePriorityName(lane);
+          existingId = {
+            id: _step,
+            priority: _step$value,
+            lanes: lane,
+            startTime: performance.now(),
+            status: "scheduled",
+            suspendCount: 0,
+            yieldCount: 0,
+            interruptCount: 0,
+            componentRenderCounts: /* @__PURE__ */ new Map()
+          };
+          activeUpdates.set(_step, existingId);
+          console.log(
+            "%c[Update #" + _step + "] SCHEDULED %c" + _step$value,
+            "color: #9c27b0; font-weight: bold;",
+            "color: #e91e63; font-weight: bold;"
+          );
+          console.log(
+            "%c[Update #" + _step + "]   lanes: 0b" + lane.toString(2).padStart(31, "0"),
+            "color: #9c27b0;"
+          );
+        }
         if (root3 === workInProgressRoot && (2 === workInProgressSuspendedReason || 9 === workInProgressSuspendedReason) || null !== root3.cancelPendingCommit)
           prepareFreshStack(root3, 0), markRootSuspended(
             root3,
@@ -10889,8 +10927,8 @@
             workLoopSync();
             exitStatus = workInProgressRootExitStatus;
             break;
-          } catch (thrownValue$189) {
-            handleThrow(root3, thrownValue$189);
+          } catch (thrownValue$193) {
+            handleThrow(root3, thrownValue$193);
           }
         while (1);
         lanes && root3.shellSuspendCounter++;
@@ -10987,8 +11025,8 @@
             }
             workLoopConcurrentByScheduler();
             break;
-          } catch (thrownValue$191) {
-            handleThrow(root3, thrownValue$191);
+          } catch (thrownValue$195) {
+            handleThrow(root3, thrownValue$195);
           }
         while (1);
         lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -11145,11 +11183,6 @@
           flushPendingEffects();
         while (0 !== pendingEffectsStatus);
         if (0 !== (executionContext & 6)) throw Error(formatProdErrorMessage(327));
-        currentCommitStart = performance.now();
-        console.log(
-          "%c[React Timing] Commit #" + renderCount + " START (" + (isInitialMount ? "MOUNT" : "UPDATE") + ")",
-          "color: #f0db4f; font-weight: bold;"
-        );
         if (null === finishedWork)
           null !== root3.stoppingGestures && stopCompletedGestures(root3);
         else {
@@ -11204,6 +11237,11 @@
             finishedWork = shouldStartViewTransition;
             null !== root3.stoppingGestures && (stopCompletedGestures(root3), finishedWork = false);
             pendingEffectsStatus = 1;
+            currentCommitStart = performance.now();
+            console.log(
+              "%c[React Timing] Commit #" + renderCount + " START (" + (isInitialMount ? "MOUNT" : "UPDATE") + ")",
+              "color: #f0db4f; font-weight: bold;"
+            );
             finishedWork ? pendingViewTransition = startViewTransition(
               suspendedState,
               root3.containerInfo,
@@ -11343,14 +11381,18 @@
         if (4 === pendingEffectsStatus || 3 === pendingEffectsStatus) {
           pendingEffectsStatus = 0;
           pendingViewTransition = null;
+          requestPaint();
+          var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors, passiveSubtreeMask = (lanes & 335544064) === lanes ? 10262 : 10256;
+          passiveSubtreeMask = 0 !== (finishedWork.subtreeFlags & passiveSubtreeMask) || 0 !== (finishedWork.flags & passiveSubtreeMask);
           var wasInitialMount = isInitialMount;
           isInitialMount = false;
-          var commitDuration = performance.now() - currentCommitStart, totalDuration = performance.now() - currentRenderStart;
+          currentCommitEnd = performance.now();
           wasInitialMount = wasInitialMount ? "MOUNT" : "UPDATE";
           console.log(
             "%c[React Timing] Commit #" + renderCount + " COMPLETE (" + wasInitialMount + ")",
             "color: #f0db4f;"
           );
+          var commitDuration = currentCommitEnd - currentCommitStart, renderDuration = currentCommitStart - currentRenderStart, totalDuration = currentCommitEnd - currentRenderStart;
           console.log(
             "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
             "color: #888;"
@@ -11364,60 +11406,54 @@
             "color: #4caf50;"
           );
           console.log(
-            "%c[React Timing]   Render: " + (totalDuration - commitDuration).toFixed(2) + "ms",
+            "%c[React Timing]   Render:          " + renderDuration.toFixed(2) + "ms",
             "color: #4caf50;"
           );
           console.log(
-            "%c[React Timing]   Commit: " + commitDuration.toFixed(2) + "ms",
+            "%c[React Timing]   Commit:          " + commitDuration.toFixed(2) + "ms",
             "color: #4caf50;"
           );
           console.log(
-            "%c[React Timing]   Total:  " + totalDuration.toFixed(2) + "ms",
+            "%c[React Timing]   Total:           " + totalDuration.toFixed(2) + "ms",
             "color: #4caf50; font-weight: bold;"
           );
           console.log(
             "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
             "color: #888;"
           );
-          if (commitDuration = findUpdateByLanes(pendingEffectsLanes))
-            commitDuration.status = "committed", totalDuration = performance.now() - commitDuration.startTime, console.log(
-              "%c[Update #" + commitDuration.id + "] COMMITTED TO DOM",
+          if (wasInitialMount = findUpdateByLanes(pendingEffectsLanes))
+            wasInitialMount.status = "committed", commitDuration = performance.now() - wasInitialMount.startTime, console.log(
+              "%c[Update #" + wasInitialMount.id + "] COMMITTED TO DOM",
               "color: #4caf50; font-weight: bold;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+              "%c[Update #" + wasInitialMount.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
               "color: #888;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "] Summary:",
+              "%c[Update #" + wasInitialMount.id + "] Summary:",
               "color: #4caf50; font-weight: bold;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Priority:    " + commitDuration.priority,
+              "%c[Update #" + wasInitialMount.id + "]   Priority:    " + wasInitialMount.priority,
               "color: #4caf50;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Total time:  " + totalDuration.toFixed(2) + "ms",
+              "%c[Update #" + wasInitialMount.id + "]   Total time:  " + commitDuration.toFixed(2) + "ms",
               "color: #4caf50;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Suspends:    " + commitDuration.suspendCount,
+              "%c[Update #" + wasInitialMount.id + "]   Suspends:    " + wasInitialMount.suspendCount,
               "color: #4caf50;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Yields:      " + commitDuration.yieldCount,
+              "%c[Update #" + wasInitialMount.id + "]   Yields:      " + wasInitialMount.yieldCount,
               "color: #4caf50;"
             ), console.log(
-              "%c[Update #" + commitDuration.id + "]   Interrupts:  " + commitDuration.interruptCount,
+              "%c[Update #" + wasInitialMount.id + "]   Interrupts:  " + wasInitialMount.interruptCount,
               "color: #4caf50;"
-            ), logComponentRenderSummary(commitDuration), console.log(
-              "%c[Update #" + commitDuration.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
+            ), logComponentRenderSummary(wasInitialMount), console.log(
+              "%c[Update #" + wasInitialMount.id + "] \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550",
               "color: #888;"
-            ), activeUpdates.delete(commitDuration.id);
-          requestPaint();
-          commitDuration = pendingEffectsRoot;
-          var finishedWork = pendingFinishedWork;
-          totalDuration = pendingEffectsLanes;
-          wasInitialMount = pendingRecoverableErrors;
-          var passiveSubtreeMask = (totalDuration & 335544064) === totalDuration ? 10262 : 10256;
-          0 !== (finishedWork.subtreeFlags & passiveSubtreeMask) || 0 !== (finishedWork.flags & passiveSubtreeMask) ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(commitDuration, commitDuration.pendingLanes));
-          passiveSubtreeMask = commitDuration.pendingLanes;
+            ), activeUpdates.delete(wasInitialMount.id);
+          passiveSubtreeMask ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root3, root3.pendingLanes));
+          passiveSubtreeMask = root3.pendingLanes;
           0 === passiveSubtreeMask && (legacyErrorBoundariesThatAlreadyFailed = null);
-          lanesToEventPriority(totalDuration);
+          lanesToEventPriority(lanes);
           finishedWork = finishedWork.stateNode;
           if (injectedHook && "function" === typeof injectedHook.onCommitFiberRoot)
             try {
@@ -11429,14 +11465,15 @@
               );
             } catch (err) {
             }
-          if (null !== wasInitialMount) {
+          if (null !== recoverableErrors) {
             finishedWork = ReactSharedInternals.T;
             passiveSubtreeMask = ReactDOMSharedInternals.p;
             ReactDOMSharedInternals.p = 2;
             ReactSharedInternals.T = null;
             try {
-              for (var onRecoverableError = commitDuration.onRecoverableError, i = 0; i < wasInitialMount.length; i++) {
-                var recoverableError = wasInitialMount[i];
+              var onRecoverableError = root3.onRecoverableError;
+              for (wasInitialMount = 0; wasInitialMount < recoverableErrors.length; wasInitialMount++) {
+                var recoverableError = recoverableErrors[wasInitialMount];
                 onRecoverableError(recoverableError.value, {
                   componentStack: recoverableError.stack
                 });
@@ -11445,16 +11482,16 @@
               ReactSharedInternals.T = finishedWork, ReactDOMSharedInternals.p = passiveSubtreeMask;
             }
           }
-          onRecoverableError = pendingViewTransitionEvents;
-          recoverableError = pendingTransitionTypes;
+          recoverableErrors = pendingViewTransitionEvents;
+          onRecoverableError = pendingTransitionTypes;
           pendingTransitionTypes = null;
-          if (null !== onRecoverableError)
-            for (pendingViewTransitionEvents = null, null === recoverableError && (recoverableError = []), wasInitialMount = 0; wasInitialMount < onRecoverableError.length; wasInitialMount++)
-              (0, onRecoverableError[wasInitialMount])(recoverableError);
+          if (null !== recoverableErrors)
+            for (pendingViewTransitionEvents = null, null === onRecoverableError && (onRecoverableError = []), recoverableError = 0; recoverableError < recoverableErrors.length; recoverableError++)
+              (0, recoverableErrors[recoverableError])(onRecoverableError);
           0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
-          ensureRootIsScheduled(commitDuration);
-          passiveSubtreeMask = commitDuration.pendingLanes;
-          0 !== (totalDuration & 261930) && 0 !== (passiveSubtreeMask & 42) ? commitDuration === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = commitDuration) : nestedUpdateCount = 0;
+          ensureRootIsScheduled(root3);
+          passiveSubtreeMask = root3.pendingLanes;
+          0 !== (lanes & 261930) && 0 !== (passiveSubtreeMask & 42) ? root3 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root3) : nestedUpdateCount = 0;
           if (hasScheduledReplayAttempt) {
             hasScheduledReplayAttempt = false;
             null !== queuedFocus && attemptReplayContinuousQueuedEvent(queuedFocus) && (queuedFocus = null);
@@ -11462,16 +11499,10 @@
             null !== queuedMouse && attemptReplayContinuousQueuedEvent(queuedMouse) && (queuedMouse = null);
             queuedPointers.forEach(attemptReplayContinuousQueuedEventInMap);
             queuedPointerCaptures.forEach(attemptReplayContinuousQueuedEventInMap);
-            for (onRecoverableError = 0; onRecoverableError < queuedChangeEventTargets.length; onRecoverableError++)
-              recoverableError = queuedChangeEventTargets[onRecoverableError], "INPUT" === recoverableError.nodeName ? "checkbox" === recoverableError.type || "radio" === recoverableError.type ? (recoverableError.dispatchEvent(
+            for (root3 = 0; root3 < queuedChangeEventTargets.length; root3++)
+              lanes = queuedChangeEventTargets[root3], "INPUT" === lanes.nodeName ? "checkbox" === lanes.type || "radio" === lanes.type ? (lanes.dispatchEvent(
                 new ("function" === typeof PointerEvent ? PointerEvent : Event)("click", { bubbles: true })
-              ), recoverableError.dispatchEvent(
-                new Event("input", { bubbles: true })
-              )) : "function" === typeof InputEvent && recoverableError.dispatchEvent(
-                new InputEvent("input", { bubbles: true })
-              ) : "TEXTAREA" === recoverableError.nodeName && "function" === typeof InputEvent && recoverableError.dispatchEvent(
-                new InputEvent("input", { bubbles: true })
-              ), recoverableError.dispatchEvent(new Event("change", { bubbles: true }));
+              ), lanes.dispatchEvent(new Event("input", { bubbles: true }))) : "function" === typeof InputEvent && lanes.dispatchEvent(new InputEvent("input", { bubbles: true })) : "TEXTAREA" === lanes.nodeName && "function" === typeof InputEvent && lanes.dispatchEvent(new InputEvent("input", { bubbles: true })), lanes.dispatchEvent(new Event("change", { bubbles: true }));
             queuedChangeEventTargets.length = 0;
           }
           flushSyncWorkAcrossRoots_impl(0, false);
@@ -11534,13 +11565,13 @@
             }
             var rotate = computedStyle.rotate;
             if ("none" !== rotate && "" !== rotate) {
-              var parts$270 = rotate.split(" ");
-              transform = 1 === parts$270.length ? "rotate(" + parts$270[0] + ") " + transform : 2 === parts$270.length ? "rotate" + parts$270[0].toUpperCase() + "(" + parts$270[1] + ") " + transform : "rotate3d(" + parts$270.join(", ") + ") " + transform;
+              var parts$274 = rotate.split(" ");
+              transform = 1 === parts$274.length ? "rotate(" + parts$274[0] + ") " + transform : 2 === parts$274.length ? "rotate" + parts$274[0].toUpperCase() + "(" + parts$274[1] + ") " + transform : "rotate3d(" + parts$274.join(", ") + ") " + transform;
             }
             var translate = computedStyle.translate;
             if ("none" !== translate && "" !== translate) {
-              var parts$271 = translate.split(" ");
-              transform = (3 === parts$271.length ? "translate3d" : "translate") + "(" + parts$271.join(", ") + ") " + transform;
+              var parts$275 = translate.split(" ");
+              transform = (3 === parts$275.length ? "translate3d" : "translate") + "(" + parts$275.join(", ") + ") " + transform;
             }
             var JSCompiler_inline_result = transform;
             clone.style.translate = "none";
@@ -11663,6 +11694,11 @@
           pendingFinishedWork = pendingEffectsRoot = null;
           pendingEffectsLanes = 0;
           if (0 !== (executionContext & 6)) throw Error(formatProdErrorMessage(331));
+          currentPassiveEffectsStart = performance.now();
+          console.log(
+            "%c[React Timing] Passive Effects #" + renderCount + " START",
+            "color: #ff9800; font-weight: bold;"
+          );
           var prevExecutionContext = executionContext;
           executionContext |= 4;
           commitPassiveUnmountOnFiber(root$jscomp$0.current);
@@ -11671,6 +11707,15 @@
             root$jscomp$0.current,
             lanes,
             renderPriority
+          );
+          var passiveEffectsDuration = performance.now() - currentPassiveEffectsStart;
+          console.log(
+            "%c[React Timing] Passive Effects #" + renderCount + " COMPLETE: " + passiveEffectsDuration.toFixed(2) + "ms",
+            "color: #ff9800;"
+          );
+          console.log(
+            "%c[React Timing] \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+            "color: #888;"
           );
           executionContext = prevExecutionContext;
           flushSyncWorkAcrossRoots_impl(0, false);
@@ -11794,25 +11839,25 @@
           isFlushingWork = true;
           do {
             var didPerformSomeWork = false;
-            for (var root$198 = firstScheduledRoot; null !== root$198; ) {
+            for (var root$202 = firstScheduledRoot; null !== root$202; ) {
               if (!onlyLegacy)
                 if (0 !== syncTransitionLanes) {
-                  var pendingLanes = root$198.pendingLanes;
+                  var pendingLanes = root$202.pendingLanes;
                   if (0 === pendingLanes) var JSCompiler_inline_result = 0;
                   else {
-                    var suspendedLanes = root$198.suspendedLanes, pingedLanes = root$198.pingedLanes;
+                    var suspendedLanes = root$202.suspendedLanes, pingedLanes = root$202.pingedLanes;
                     JSCompiler_inline_result = (1 << 31 - clz32(42 | syncTransitionLanes) + 1) - 1;
                     JSCompiler_inline_result &= pendingLanes & ~(suspendedLanes & ~pingedLanes);
                     JSCompiler_inline_result = JSCompiler_inline_result & 201326741 ? JSCompiler_inline_result & 201326741 | 1 : JSCompiler_inline_result ? JSCompiler_inline_result | 2 : 0;
                   }
-                  0 !== JSCompiler_inline_result && (didPerformSomeWork = true, performSyncWorkOnRoot(root$198, JSCompiler_inline_result));
+                  0 !== JSCompiler_inline_result && (didPerformSomeWork = true, performSyncWorkOnRoot(root$202, JSCompiler_inline_result));
                 } else
                   JSCompiler_inline_result = workInProgressRootRenderLanes, JSCompiler_inline_result = getNextLanes(
-                    root$198,
-                    root$198 === workInProgressRoot ? JSCompiler_inline_result : 0,
-                    null !== root$198.cancelPendingCommit || -1 !== root$198.timeoutHandle
-                  ), 0 === (JSCompiler_inline_result & 3) && 64 !== JSCompiler_inline_result || checkIfRootIsPrerendering(root$198, JSCompiler_inline_result) || (didPerformSomeWork = true, performSyncWorkOnRoot(root$198, JSCompiler_inline_result));
-              root$198 = root$198.next;
+                    root$202,
+                    root$202 === workInProgressRoot ? JSCompiler_inline_result : 0,
+                    null !== root$202.cancelPendingCommit || -1 !== root$202.timeoutHandle
+                  ), 0 === (JSCompiler_inline_result & 3) && 64 !== JSCompiler_inline_result || checkIfRootIsPrerendering(root$202, JSCompiler_inline_result) || (didPerformSomeWork = true, performSyncWorkOnRoot(root$202, JSCompiler_inline_result));
+              root$202 = root$202.next;
             }
           } while (didPerformSomeWork);
           isFlushingWork = false;
@@ -12039,17 +12084,17 @@
           200
         ), nativeEventTarget[internalScrollTimer] = targetInst);
       }
-      for (i$jscomp$inline_1823 = 0; i$jscomp$inline_1823 < simpleEventPluginEvents.length; i$jscomp$inline_1823++) {
-        eventName$jscomp$inline_1824 = simpleEventPluginEvents[i$jscomp$inline_1823], domEventName$jscomp$inline_1825 = eventName$jscomp$inline_1824.toLowerCase(), capitalizedEvent$jscomp$inline_1826 = eventName$jscomp$inline_1824[0].toUpperCase() + eventName$jscomp$inline_1824.slice(1);
+      for (i$jscomp$inline_1832 = 0; i$jscomp$inline_1832 < simpleEventPluginEvents.length; i$jscomp$inline_1832++) {
+        eventName$jscomp$inline_1833 = simpleEventPluginEvents[i$jscomp$inline_1832], domEventName$jscomp$inline_1834 = eventName$jscomp$inline_1833.toLowerCase(), capitalizedEvent$jscomp$inline_1835 = eventName$jscomp$inline_1833[0].toUpperCase() + eventName$jscomp$inline_1833.slice(1);
         registerSimpleEvent(
-          domEventName$jscomp$inline_1825,
-          "on" + capitalizedEvent$jscomp$inline_1826
+          domEventName$jscomp$inline_1834,
+          "on" + capitalizedEvent$jscomp$inline_1835
         );
       }
-      var eventName$jscomp$inline_1824;
-      var domEventName$jscomp$inline_1825;
-      var capitalizedEvent$jscomp$inline_1826;
-      var i$jscomp$inline_1823;
+      var eventName$jscomp$inline_1833;
+      var domEventName$jscomp$inline_1834;
+      var capitalizedEvent$jscomp$inline_1835;
+      var i$jscomp$inline_1832;
       registerSimpleEvent(ANIMATION_END, "onAnimationEnd");
       registerSimpleEvent(ANIMATION_ITERATION, "onAnimationIteration");
       registerSimpleEvent(ANIMATION_START, "onAnimationStart");
@@ -12970,34 +13015,34 @@
             var propKey = null;
             for (hasSrc in props)
               if (props.hasOwnProperty(hasSrc)) {
-                var propValue$212 = props[hasSrc];
-                if (null != propValue$212)
+                var propValue$216 = props[hasSrc];
+                if (null != propValue$216)
                   switch (hasSrc) {
                     case "name":
-                      hasSrcSet = propValue$212;
+                      hasSrcSet = propValue$216;
                       break;
                     case "type":
-                      propValue = propValue$212;
+                      propValue = propValue$216;
                       break;
                     case "checked":
-                      checked = propValue$212;
+                      checked = propValue$216;
                       break;
                     case "defaultChecked":
-                      propKey = propValue$212;
+                      propKey = propValue$216;
                       break;
                     case "value":
-                      value = propValue$212;
+                      value = propValue$216;
                       break;
                     case "defaultValue":
-                      defaultValue = propValue$212;
+                      defaultValue = propValue$216;
                       break;
                     case "children":
                     case "dangerouslySetInnerHTML":
-                      if (null != propValue$212)
+                      if (null != propValue$216)
                         throw Error(formatProdErrorMessage(137, tag));
                       break;
                     default:
-                      setProp(domElement, tag, hasSrc, propValue$212, props, null);
+                      setProp(domElement, tag, hasSrc, propValue$216, props, null);
                   }
               }
             a: {
@@ -13146,11 +13191,11 @@
             return;
           default:
             if (isCustomElement(tag)) {
-              for (propValue$212 in props)
-                props.hasOwnProperty(propValue$212) && (hasSrc = props[propValue$212], void 0 !== hasSrc && setPropOnCustomElement(
+              for (propValue$216 in props)
+                props.hasOwnProperty(propValue$216) && (hasSrc = props[propValue$216], void 0 !== hasSrc && setPropOnCustomElement(
                   domElement,
                   tag,
-                  propValue$212,
+                  propValue$216,
                   hasSrc,
                   props,
                   void 0
@@ -13188,11 +13233,11 @@
                     nextProps.hasOwnProperty(propKey) || setProp(domElement, tag, propKey, null, nextProps, lastProp);
                 }
             }
-            for (var propKey$229 in nextProps) {
-              var propKey = nextProps[propKey$229];
-              lastProp = lastProps[propKey$229];
-              if (nextProps.hasOwnProperty(propKey$229) && (null != propKey || null != lastProp))
-                switch (propKey$229) {
+            for (var propKey$233 in nextProps) {
+              var propKey = nextProps[propKey$233];
+              lastProp = lastProps[propKey$233];
+              if (nextProps.hasOwnProperty(propKey$233) && (null != propKey || null != lastProp))
+                switch (propKey$233) {
                   case "type":
                     propKey !== lastProp && (viewTransitionMutationContext = true);
                     type = propKey;
@@ -13226,7 +13271,7 @@
                     propKey !== lastProp && setProp(
                       domElement,
                       tag,
-                      propKey$229,
+                      propKey$233,
                       propKey,
                       nextProps,
                       lastProp
@@ -13245,7 +13290,7 @@
             );
             return;
           case "select":
-            propKey = value = defaultValue = propKey$229 = null;
+            propKey = value = defaultValue = propKey$233 = null;
             for (type in lastProps)
               if (lastDefaultValue = lastProps[type], lastProps.hasOwnProperty(type) && null != lastDefaultValue)
                 switch (type) {
@@ -13268,7 +13313,7 @@
                 switch (name) {
                   case "value":
                     type !== lastDefaultValue && (viewTransitionMutationContext = true);
-                    propKey$229 = type;
+                    propKey$233 = type;
                     break;
                   case "defaultValue":
                     type !== lastDefaultValue && (viewTransitionMutationContext = true);
@@ -13289,10 +13334,10 @@
             tag = defaultValue;
             lastProps = value;
             nextProps = propKey;
-            null != propKey$229 ? updateOptions(domElement, !!lastProps, propKey$229, false) : !!nextProps !== !!lastProps && (null != tag ? updateOptions(domElement, !!lastProps, tag, true) : updateOptions(domElement, !!lastProps, lastProps ? [] : "", false));
+            null != propKey$233 ? updateOptions(domElement, !!lastProps, propKey$233, false) : !!nextProps !== !!lastProps && (null != tag ? updateOptions(domElement, !!lastProps, tag, true) : updateOptions(domElement, !!lastProps, lastProps ? [] : "", false));
             return;
           case "textarea":
-            propKey = propKey$229 = null;
+            propKey = propKey$233 = null;
             for (defaultValue in lastProps)
               if (name = lastProps[defaultValue], lastProps.hasOwnProperty(defaultValue) && null != name && !nextProps.hasOwnProperty(defaultValue))
                 switch (defaultValue) {
@@ -13308,7 +13353,7 @@
                 switch (value) {
                   case "value":
                     name !== type && (viewTransitionMutationContext = true);
-                    propKey$229 = name;
+                    propKey$233 = name;
                     break;
                   case "defaultValue":
                     name !== type && (viewTransitionMutationContext = true);
@@ -13322,12 +13367,12 @@
                   default:
                     name !== type && setProp(domElement, tag, value, name, nextProps, type);
                 }
-            updateTextarea(domElement, propKey$229, propKey);
+            updateTextarea(domElement, propKey$233, propKey);
             return;
           case "option":
-            for (var propKey$245 in lastProps)
-              if (propKey$229 = lastProps[propKey$245], lastProps.hasOwnProperty(propKey$245) && null != propKey$229 && !nextProps.hasOwnProperty(propKey$245))
-                switch (propKey$245) {
+            for (var propKey$249 in lastProps)
+              if (propKey$233 = lastProps[propKey$249], lastProps.hasOwnProperty(propKey$249) && null != propKey$233 && !nextProps.hasOwnProperty(propKey$249))
+                switch (propKey$249) {
                   case "selected":
                     domElement.selected = false;
                     break;
@@ -13335,25 +13380,25 @@
                     setProp(
                       domElement,
                       tag,
-                      propKey$245,
+                      propKey$249,
                       null,
                       nextProps,
-                      propKey$229
+                      propKey$233
                     );
                 }
             for (lastDefaultValue in nextProps)
-              if (propKey$229 = nextProps[lastDefaultValue], propKey = lastProps[lastDefaultValue], nextProps.hasOwnProperty(lastDefaultValue) && propKey$229 !== propKey && (null != propKey$229 || null != propKey))
+              if (propKey$233 = nextProps[lastDefaultValue], propKey = lastProps[lastDefaultValue], nextProps.hasOwnProperty(lastDefaultValue) && propKey$233 !== propKey && (null != propKey$233 || null != propKey))
                 switch (lastDefaultValue) {
                   case "selected":
-                    propKey$229 !== propKey && (viewTransitionMutationContext = true);
-                    domElement.selected = propKey$229 && "function" !== typeof propKey$229 && "symbol" !== typeof propKey$229;
+                    propKey$233 !== propKey && (viewTransitionMutationContext = true);
+                    domElement.selected = propKey$233 && "function" !== typeof propKey$233 && "symbol" !== typeof propKey$233;
                     break;
                   default:
                     setProp(
                       domElement,
                       tag,
                       lastDefaultValue,
-                      propKey$229,
+                      propKey$233,
                       nextProps,
                       propKey
                     );
@@ -13374,14 +13419,14 @@
           case "track":
           case "wbr":
           case "menuitem":
-            for (var propKey$250 in lastProps)
-              propKey$229 = lastProps[propKey$250], lastProps.hasOwnProperty(propKey$250) && null != propKey$229 && !nextProps.hasOwnProperty(propKey$250) && setProp(domElement, tag, propKey$250, null, nextProps, propKey$229);
+            for (var propKey$254 in lastProps)
+              propKey$233 = lastProps[propKey$254], lastProps.hasOwnProperty(propKey$254) && null != propKey$233 && !nextProps.hasOwnProperty(propKey$254) && setProp(domElement, tag, propKey$254, null, nextProps, propKey$233);
             for (checked in nextProps)
-              if (propKey$229 = nextProps[checked], propKey = lastProps[checked], nextProps.hasOwnProperty(checked) && propKey$229 !== propKey && (null != propKey$229 || null != propKey))
+              if (propKey$233 = nextProps[checked], propKey = lastProps[checked], nextProps.hasOwnProperty(checked) && propKey$233 !== propKey && (null != propKey$233 || null != propKey))
                 switch (checked) {
                   case "children":
                   case "dangerouslySetInnerHTML":
-                    if (null != propKey$229)
+                    if (null != propKey$233)
                       throw Error(formatProdErrorMessage(137, tag));
                     break;
                   default:
@@ -13389,7 +13434,7 @@
                       domElement,
                       tag,
                       checked,
-                      propKey$229,
+                      propKey$233,
                       nextProps,
                       propKey
                     );
@@ -13397,31 +13442,31 @@
             return;
           default:
             if (isCustomElement(tag)) {
-              for (var propKey$255 in lastProps)
-                propKey$229 = lastProps[propKey$255], lastProps.hasOwnProperty(propKey$255) && void 0 !== propKey$229 && !nextProps.hasOwnProperty(propKey$255) && setPropOnCustomElement(
+              for (var propKey$259 in lastProps)
+                propKey$233 = lastProps[propKey$259], lastProps.hasOwnProperty(propKey$259) && void 0 !== propKey$233 && !nextProps.hasOwnProperty(propKey$259) && setPropOnCustomElement(
                   domElement,
                   tag,
-                  propKey$255,
+                  propKey$259,
                   void 0,
                   nextProps,
-                  propKey$229
+                  propKey$233
                 );
               for (defaultChecked in nextProps)
-                propKey$229 = nextProps[defaultChecked], propKey = lastProps[defaultChecked], !nextProps.hasOwnProperty(defaultChecked) || propKey$229 === propKey || void 0 === propKey$229 && void 0 === propKey || setPropOnCustomElement(
+                propKey$233 = nextProps[defaultChecked], propKey = lastProps[defaultChecked], !nextProps.hasOwnProperty(defaultChecked) || propKey$233 === propKey || void 0 === propKey$233 && void 0 === propKey || setPropOnCustomElement(
                   domElement,
                   tag,
                   defaultChecked,
-                  propKey$229,
+                  propKey$233,
                   nextProps,
                   propKey
                 );
               return;
             }
         }
-        for (var propKey$260 in lastProps)
-          propKey$229 = lastProps[propKey$260], lastProps.hasOwnProperty(propKey$260) && null != propKey$229 && !nextProps.hasOwnProperty(propKey$260) && setProp(domElement, tag, propKey$260, null, nextProps, propKey$229);
+        for (var propKey$264 in lastProps)
+          propKey$233 = lastProps[propKey$264], lastProps.hasOwnProperty(propKey$264) && null != propKey$233 && !nextProps.hasOwnProperty(propKey$264) && setProp(domElement, tag, propKey$264, null, nextProps, propKey$233);
         for (lastProp in nextProps)
-          propKey$229 = nextProps[lastProp], propKey = lastProps[lastProp], !nextProps.hasOwnProperty(lastProp) || propKey$229 === propKey || null == propKey$229 && null == propKey || setProp(domElement, tag, lastProp, propKey$229, nextProps, propKey);
+          propKey$233 = nextProps[lastProp], propKey = lastProps[lastProp], !nextProps.hasOwnProperty(lastProp) || propKey$233 === propKey || null == propKey$233 && null == propKey || setProp(domElement, tag, lastProp, propKey$233, nextProps, propKey);
       }
       function isLikelyStaticResource(initiatorType) {
         switch (initiatorType) {
@@ -13847,11 +13892,11 @@
                     "-ua-view-transition-group-anim-"
                   )) : isExitGroupAnim = true;
                 }
-                var timing$277 = pseudoElement.getTiming();
-                anim = rangeEnd - (("number" === typeof timing$277.duration ? timing$277.duration : 0) + timing$277.delay) * longestDuration;
-                groupName = rangeEnd - timing$277.delay * longestDuration;
-                if ("reverse" === timing$277.direction || "alternate-reverse" === timing$277.direction)
-                  timing$277 = anim, anim = groupName, groupName = timing$277;
+                var timing$281 = pseudoElement.getTiming();
+                anim = rangeEnd - (("number" === typeof timing$281.duration ? timing$281.duration : 0) + timing$281.delay) * longestDuration;
+                groupName = rangeEnd - timing$281.delay * longestDuration;
+                if ("reverse" === timing$281.direction || "alternate-reverse" === timing$281.direction)
+                  timing$281 = anim, anim = groupName, groupName = timing$281;
                 animateGesture(
                   pseudoElement.getKeyframes(),
                   pseudoElement.target,
@@ -14634,17 +14679,17 @@
           case "link":
             if ("stylesheet" === pendingProps.rel && "string" === typeof pendingProps.href && "string" === typeof pendingProps.precedence) {
               type = getStyleKey(pendingProps.href);
-              var styles$286 = getResourcesFromRoot(
+              var styles$290 = getResourcesFromRoot(
                 JSCompiler_inline_result
-              ).hoistableStyles, resource$287 = styles$286.get(type);
-              resource$287 || (JSCompiler_inline_result = JSCompiler_inline_result.ownerDocument || JSCompiler_inline_result, resource$287 = {
+              ).hoistableStyles, resource$291 = styles$290.get(type);
+              resource$291 || (JSCompiler_inline_result = JSCompiler_inline_result.ownerDocument || JSCompiler_inline_result, resource$291 = {
                 type: "stylesheet",
                 instance: null,
                 count: 0,
                 state: { loading: 0, preload: null }
-              }, styles$286.set(type, resource$287), (styles$286 = JSCompiler_inline_result.querySelector(
+              }, styles$290.set(type, resource$291), (styles$290 = JSCompiler_inline_result.querySelector(
                 getStylesheetSelectorFromKey(type)
-              )) && !styles$286._p && (resource$287.instance = styles$286, resource$287.state.loading = 5), preloadPropsMap.has(type) || (pendingProps = {
+              )) && !styles$290._p && (resource$291.instance = styles$290, resource$291.state.loading = 5), preloadPropsMap.has(type) || (pendingProps = {
                 rel: "preload",
                 as: "style",
                 href: pendingProps.href,
@@ -14653,15 +14698,15 @@
                 media: pendingProps.media,
                 hrefLang: pendingProps.hrefLang,
                 referrerPolicy: pendingProps.referrerPolicy
-              }, preloadPropsMap.set(type, pendingProps), styles$286 || preloadStylesheet(
+              }, preloadPropsMap.set(type, pendingProps), styles$290 || preloadStylesheet(
                 JSCompiler_inline_result,
                 type,
                 pendingProps,
-                resource$287.state
+                resource$291.state
               )));
               if (currentProps && null === currentResource)
                 throw Error(formatProdErrorMessage(528, ""));
-              return resource$287;
+              return resource$291;
             }
             if (currentProps && null !== currentResource)
               throw Error(formatProdErrorMessage(529, ""));
@@ -14729,32 +14774,32 @@
               return resource.instance = instance;
             case "stylesheet":
               styleProps = getStyleKey(props.href);
-              var instance$292 = hoistableRoot.querySelector(
+              var instance$296 = hoistableRoot.querySelector(
                 getStylesheetSelectorFromKey(styleProps)
               );
-              if (instance$292)
-                return resource.state.loading |= 4, resource.instance = instance$292, markNodeAsHoistable(instance$292), instance$292;
+              if (instance$296)
+                return resource.state.loading |= 4, resource.instance = instance$296, markNodeAsHoistable(instance$296), instance$296;
               instance = stylesheetPropsFromRawProps(props);
               (styleProps = preloadPropsMap.get(styleProps)) && adoptPreloadPropsForStylesheet(instance, styleProps);
-              instance$292 = (hoistableRoot.ownerDocument || hoistableRoot).createElement("link");
-              markNodeAsHoistable(instance$292);
-              var linkInstance = instance$292;
+              instance$296 = (hoistableRoot.ownerDocument || hoistableRoot).createElement("link");
+              markNodeAsHoistable(instance$296);
+              var linkInstance = instance$296;
               linkInstance._p = new Promise(function(resolve, reject) {
                 linkInstance.onload = resolve;
                 linkInstance.onerror = reject;
               });
-              setInitialProperties(instance$292, "link", instance);
+              setInitialProperties(instance$296, "link", instance);
               resource.state.loading |= 4;
-              insertStylesheet(instance$292, props.precedence, hoistableRoot);
-              return resource.instance = instance$292;
+              insertStylesheet(instance$296, props.precedence, hoistableRoot);
+              return resource.instance = instance$296;
             case "script":
-              instance$292 = getScriptKey(props.src);
+              instance$296 = getScriptKey(props.src);
               if (styleProps = hoistableRoot.querySelector(
-                getScriptSelectorFromKey(instance$292)
+                getScriptSelectorFromKey(instance$296)
               ))
                 return resource.instance = styleProps, markNodeAsHoistable(styleProps), styleProps;
               instance = props;
-              if (styleProps = preloadPropsMap.get(instance$292))
+              if (styleProps = preloadPropsMap.get(instance$296))
                 instance = assign({}, props), adoptPreloadPropsForScript(instance, styleProps);
               hoistableRoot = hoistableRoot.ownerDocument || hoistableRoot;
               styleProps = hoistableRoot.createElement("script");
@@ -15585,12 +15630,12 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_2241 = React9.version;
-      if ("19.3.0-canary-393aa7b5-20251208" !== isomorphicReactPackageVersion$jscomp$inline_2241)
+      var isomorphicReactPackageVersion$jscomp$inline_2250 = React9.version;
+      if ("19.3.0-canary-393aa7b5-20251208" !== isomorphicReactPackageVersion$jscomp$inline_2250)
         throw Error(
           formatProdErrorMessage(
             527,
-            isomorphicReactPackageVersion$jscomp$inline_2241,
+            isomorphicReactPackageVersion$jscomp$inline_2250,
             "19.3.0-canary-393aa7b5-20251208"
           )
         );
@@ -15607,7 +15652,7 @@
         componentOrElement = null === componentOrElement ? null : componentOrElement.stateNode;
         return componentOrElement;
       };
-      var internals$jscomp$inline_2945 = {
+      var internals$jscomp$inline_2963 = {
         bundleType: 0,
         version: "19.3.0-canary-393aa7b5-20251208",
         rendererPackageName: "react-dom",
@@ -15615,16 +15660,16 @@
         reconcilerVersion: "19.3.0-canary-393aa7b5-20251208"
       };
       if ("undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__) {
-        hook$jscomp$inline_2946 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
-        if (!hook$jscomp$inline_2946.isDisabled && hook$jscomp$inline_2946.supportsFiber)
+        hook$jscomp$inline_2964 = __REACT_DEVTOOLS_GLOBAL_HOOK__;
+        if (!hook$jscomp$inline_2964.isDisabled && hook$jscomp$inline_2964.supportsFiber)
           try {
-            rendererID = hook$jscomp$inline_2946.inject(
-              internals$jscomp$inline_2945
-            ), injectedHook = hook$jscomp$inline_2946;
+            rendererID = hook$jscomp$inline_2964.inject(
+              internals$jscomp$inline_2963
+            ), injectedHook = hook$jscomp$inline_2964;
           } catch (err) {
           }
       }
-      var hook$jscomp$inline_2946;
+      var hook$jscomp$inline_2964;
       exports.createRoot = function(container, options2) {
         if (!isValidContainer(container)) throw Error(formatProdErrorMessage(299));
         var isStrictMode = false, identifierPrefix = "", onUncaughtError = defaultOnUncaughtError, onCaughtError = defaultOnCaughtError, onRecoverableError = defaultOnRecoverableError, onDefaultTransitionIndicator = defaultOnDefaultTransitionIndicator;
@@ -15872,6 +15917,345 @@
     return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
   }
   function DeepNest({ depth = 10, children }) {
+    (0, import_react.useEffect)(() => {
+      const analyticsData = {};
+      const eventTypes = ["click", "scroll", "hover", "focus", "blur", "submit", "change", "input", "keydown", "keyup"];
+      const pageNames = ["home", "dashboard", "settings", "profile", "checkout", "cart", "product", "search", "category", "help"];
+      const userSegments = ["new", "returning", "premium", "trial", "enterprise", "free", "churned", "active", "dormant", "vip"];
+      const deviceTypes = ["desktop", "mobile", "tablet", "tv", "watch", "console", "embedded", "kiosk", "ar", "vr"];
+      const browsers = ["chrome", "firefox", "safari", "edge", "opera", "brave", "vivaldi", "samsung", "uc", "qq"];
+      const countries = ["us", "uk", "de", "fr", "jp", "cn", "in", "br", "au", "ca", "mx", "es", "it", "kr", "ru"];
+      const campaigns = ["organic", "paid", "social", "email", "referral", "direct", "affiliate", "display", "video", "native"];
+      for (let i = 0; i < 100; i++) {
+        const eventType = eventTypes[i % eventTypes.length];
+        const pageName = pageNames[i % pageNames.length];
+        const segment = userSegments[i % userSegments.length];
+        const device = deviceTypes[i % deviceTypes.length];
+        const browser = browsers[i % browsers.length];
+        const country = countries[i % countries.length];
+        const campaign = campaigns[i % campaigns.length];
+        const key = `${eventType}_${pageName}_${segment}_${device}_${browser}_${country}_${campaign}`;
+        analyticsData[key] = {
+          count: Math.floor(Math.random() * 1e4),
+          uniqueUsers: Math.floor(Math.random() * 5e3),
+          avgDuration: Math.random() * 300,
+          bounceRate: Math.random(),
+          conversionRate: Math.random() * 0.1,
+          revenue: Math.random() * 1e5,
+          timestamp: Date.now() - Math.floor(Math.random() * 864e5),
+          sessionId: `sess_${Math.random().toString(36).substring(2, 15)}`,
+          userId: `user_${Math.random().toString(36).substring(2, 15)}`,
+          metadata: {
+            referrer: `https://example${i}.com/page${i}`,
+            landingPage: `/landing/${pageName}/${i}`,
+            exitPage: `/exit/${pageName}/${i}`,
+            pageViews: Math.floor(Math.random() * 20),
+            timeOnPage: Math.random() * 600,
+            scrollDepth: Math.random(),
+            clickCount: Math.floor(Math.random() * 50),
+            formSubmissions: Math.floor(Math.random() * 5),
+            errors: Math.floor(Math.random() * 3),
+            warnings: Math.floor(Math.random() * 10)
+          }
+        };
+      }
+      const aggregatedMetrics = {};
+      for (const key in analyticsData) {
+        const data = analyticsData[key];
+        const parts = key.split("_");
+        const eventType = parts[0];
+        if (!aggregatedMetrics[eventType]) {
+          aggregatedMetrics[eventType] = { totalCount: 0, totalRevenue: 0, avgConversion: 0, samples: 0 };
+        }
+        aggregatedMetrics[eventType].totalCount += data.count;
+        aggregatedMetrics[eventType].totalRevenue += data.revenue;
+        aggregatedMetrics[eventType].avgConversion += data.conversionRate;
+        aggregatedMetrics[eventType].samples += 1;
+      }
+      for (const eventType in aggregatedMetrics) {
+        aggregatedMetrics[eventType].avgConversion /= aggregatedMetrics[eventType].samples;
+      }
+      window.__deepNestAnalytics = aggregatedMetrics;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const validationSchemas = {};
+      const fieldTypes = ["text", "email", "password", "number", "phone", "url", "date", "datetime", "time", "select", "checkbox", "radio", "textarea", "file", "color"];
+      const validationRules = ["required", "minLength", "maxLength", "pattern", "min", "max", "email", "url", "phone", "custom"];
+      const errorMessages = {
+        required: "This field is required",
+        minLength: "Must be at least {min} characters",
+        maxLength: "Must be no more than {max} characters",
+        pattern: "Invalid format",
+        min: "Must be at least {min}",
+        max: "Must be no more than {max}",
+        email: "Invalid email address",
+        url: "Invalid URL",
+        phone: "Invalid phone number",
+        custom: "Validation failed"
+      };
+      for (let formIndex = 0; formIndex < 20; formIndex++) {
+        const formName = `form_${formIndex}`;
+        validationSchemas[formName] = { fields: {}, dependencies: [], conditionals: [] };
+        for (let fieldIndex = 0; fieldIndex < 15; fieldIndex++) {
+          const fieldName = `field_${formIndex}_${fieldIndex}`;
+          const fieldType = fieldTypes[fieldIndex % fieldTypes.length];
+          const rules = [];
+          for (let ruleIndex = 0; ruleIndex < 5; ruleIndex++) {
+            const ruleName = validationRules[(fieldIndex + ruleIndex) % validationRules.length];
+            rules.push({
+              name: ruleName,
+              value: ruleName === "minLength" ? 3 : ruleName === "maxLength" ? 100 : ruleName === "min" ? 0 : ruleName === "max" ? 1e3 : true,
+              message: errorMessages[ruleName].replace("{min}", "3").replace("{max}", "100"),
+              async: ruleName === "custom",
+              debounce: ruleName === "custom" ? 300 : 0
+            });
+          }
+          validationSchemas[formName].fields[fieldName] = {
+            type: fieldType,
+            label: `Field ${fieldIndex} Label`,
+            placeholder: `Enter ${fieldType}...`,
+            rules,
+            defaultValue: fieldType === "checkbox" ? false : fieldType === "number" ? 0 : "",
+            disabled: false,
+            readonly: false,
+            hidden: false,
+            order: fieldIndex,
+            group: `group_${Math.floor(fieldIndex / 5)}`,
+            helpText: `Help text for field ${fieldIndex}`,
+            errorText: "",
+            touched: false,
+            dirty: false,
+            valid: true
+          };
+        }
+        validationSchemas[formName].dependencies = [
+          { source: `field_${formIndex}_0`, target: `field_${formIndex}_1`, condition: "notEmpty" },
+          { source: `field_${formIndex}_2`, target: `field_${formIndex}_3`, condition: "equals", value: "show" },
+          { source: `field_${formIndex}_4`, target: `field_${formIndex}_5`, condition: "greaterThan", value: 10 }
+        ];
+      }
+      const compiledValidators = {};
+      for (const formName in validationSchemas) {
+        compiledValidators[formName] = {};
+        for (const fieldName in validationSchemas[formName].fields) {
+          const field = validationSchemas[formName].fields[fieldName];
+          compiledValidators[formName][fieldName] = field.rules.map((rule) => ({
+            validate: (value) => {
+              if (rule.name === "required") return value !== "" && value !== null && value !== void 0;
+              if (rule.name === "minLength") return String(value).length >= rule.value;
+              if (rule.name === "maxLength") return String(value).length <= rule.value;
+              if (rule.name === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+              return true;
+            },
+            message: rule.message
+          }));
+        }
+      }
+      window.__deepNestValidation = compiledValidators;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const workflows = {};
+      const stateNames = ["initial", "pending", "processing", "review", "approved", "rejected", "completed", "cancelled", "error", "retry"];
+      const actionNames = ["submit", "approve", "reject", "cancel", "retry", "complete", "escalate", "assign", "unassign", "comment"];
+      const conditions = ["isAdmin", "isOwner", "hasPermission", "isValid", "isComplete", "hasApproval", "withinLimit", "notExpired", "isActive", "hasBalance"];
+      for (let workflowIndex = 0; workflowIndex < 15; workflowIndex++) {
+        const workflowName = `workflow_${workflowIndex}`;
+        workflows[workflowName] = { states: {}, transitions: [], guards: [], actions: [], history: [] };
+        for (let stateIndex = 0; stateIndex < stateNames.length; stateIndex++) {
+          const stateName = stateNames[stateIndex];
+          workflows[workflowName].states[stateName] = {
+            name: stateName,
+            isInitial: stateIndex === 0,
+            isFinal: stateIndex >= 6,
+            onEnter: [`log_enter_${stateName}`, `notify_${stateName}`, `update_${stateName}`],
+            onExit: [`log_exit_${stateName}`, `cleanup_${stateName}`],
+            timeout: stateIndex < 6 ? 36e5 : null,
+            retryCount: 0,
+            maxRetries: 3,
+            metadata: {
+              description: `State ${stateName} for workflow ${workflowIndex}`,
+              category: stateIndex < 3 ? "active" : stateIndex < 6 ? "review" : "terminal",
+              priority: 10 - stateIndex,
+              sla: stateIndex < 6 ? 864e5 : null
+            }
+          };
+        }
+        for (let transitionIndex = 0; transitionIndex < 25; transitionIndex++) {
+          const fromState = stateNames[transitionIndex % (stateNames.length - 3)];
+          const toState = stateNames[(transitionIndex + 1 + Math.floor(transitionIndex / 3)) % stateNames.length];
+          const action = actionNames[transitionIndex % actionNames.length];
+          const guard = conditions[transitionIndex % conditions.length];
+          workflows[workflowName].transitions.push({
+            id: `t_${workflowIndex}_${transitionIndex}`,
+            from: fromState,
+            to: toState,
+            action,
+            guard,
+            priority: transitionIndex,
+            async: transitionIndex % 3 === 0,
+            rollback: transitionIndex % 4 === 0,
+            audit: true,
+            notify: ["owner", "admin", "watchers"],
+            hooks: {
+              before: [`validate_${action}`, `check_${guard}`],
+              after: [`record_${action}`, `trigger_${toState}`],
+              error: [`handle_error_${action}`, `notify_error`]
+            }
+          });
+        }
+        workflows[workflowName].history = Array.from({ length: 50 }, (_, i) => ({
+          timestamp: Date.now() - i * 6e4,
+          fromState: stateNames[i % stateNames.length],
+          toState: stateNames[(i + 1) % stateNames.length],
+          action: actionNames[i % actionNames.length],
+          actor: `user_${i % 10}`,
+          metadata: { ip: `192.168.1.${i}`, userAgent: "Mozilla/5.0", duration: Math.random() * 1e3 }
+        }));
+      }
+      const workflowEngine = {
+        workflows,
+        currentStates: {},
+        execute: (workflowName, action) => workflowName + "_" + action,
+        canExecute: (workflowName, action) => Boolean(workflows[workflowName]),
+        getAvailableActions: (workflowName) => actionNames
+      };
+      window.__deepNestWorkflows = workflowEngine;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const dataPipeline = { transformers: [], filters: [], aggregators: [], cache: /* @__PURE__ */ new Map() };
+      const operations = ["map", "filter", "reduce", "sort", "group", "join", "split", "merge", "dedupe", "sample"];
+      const dataTypes = ["string", "number", "boolean", "date", "array", "object", "null", "undefined", "symbol", "bigint"];
+      for (let pipelineIndex = 0; pipelineIndex < 30; pipelineIndex++) {
+        const transformerName = `transformer_${pipelineIndex}`;
+        const operation = operations[pipelineIndex % operations.length];
+        const inputType = dataTypes[pipelineIndex % dataTypes.length];
+        const outputType = dataTypes[(pipelineIndex + 1) % dataTypes.length];
+        dataPipeline.transformers.push({
+          name: transformerName,
+          operation,
+          inputType,
+          outputType,
+          config: {
+            parallel: pipelineIndex % 2 === 0,
+            batchSize: 100 + pipelineIndex * 10,
+            timeout: 5e3 + pipelineIndex * 100,
+            retries: 3,
+            backoff: "exponential",
+            cache: pipelineIndex % 3 === 0,
+            cacheTTL: 6e4,
+            logging: true,
+            metrics: true,
+            tracing: pipelineIndex % 4 === 0
+          },
+          transform: (data) => {
+            if (operation === "map") return Array.isArray(data) ? data.map((x) => x) : data;
+            if (operation === "filter") return Array.isArray(data) ? data.filter(() => true) : data;
+            if (operation === "reduce") return Array.isArray(data) ? data.reduce((a, b) => a, null) : data;
+            return data;
+          },
+          validate: (data) => data !== void 0,
+          preProcess: (data) => data,
+          postProcess: (data) => data,
+          errorHandler: (error) => console.error(error),
+          metadata: {
+            version: "1.0.0",
+            author: `author_${pipelineIndex}`,
+            created: Date.now() - pipelineIndex * 864e5,
+            updated: Date.now(),
+            tags: [`tag_${pipelineIndex}`, operation, inputType],
+            dependencies: pipelineIndex > 0 ? [`transformer_${pipelineIndex - 1}`] : []
+          }
+        });
+        dataPipeline.filters.push({
+          name: `filter_${pipelineIndex}`,
+          condition: (item) => item !== null,
+          priority: pipelineIndex,
+          enabled: true,
+          exclusive: false
+        });
+        dataPipeline.aggregators.push({
+          name: `aggregator_${pipelineIndex}`,
+          type: ["sum", "avg", "min", "max", "count"][pipelineIndex % 5],
+          field: `field_${pipelineIndex}`,
+          groupBy: pipelineIndex % 2 === 0 ? `group_${pipelineIndex}` : null
+        });
+      }
+      const sampleData = Array.from({ length: 1e3 }, (_, i) => ({
+        id: i,
+        value: Math.random() * 1e3,
+        category: `cat_${i % 10}`,
+        timestamp: Date.now() - i * 1e3,
+        tags: [`tag_${i % 5}`, `tag_${(i + 1) % 5}`],
+        nested: { a: i, b: i * 2, c: { d: i * 3 } }
+      }));
+      let processedData = sampleData;
+      for (const transformer of dataPipeline.transformers.slice(0, 5)) {
+        processedData = transformer.transform(processedData);
+      }
+      dataPipeline.cache.set("lastProcessed", processedData);
+      dataPipeline.cache.set("lastTimestamp", Date.now());
+      window.__deepNestPipeline = dataPipeline;
+    }, [depth]);
+    (0, import_react.useEffect)(() => {
+      const i18nSystem = { locales: {}, formatters: {}, pluralRules: {}, translations: {} };
+      const locales = ["en-US", "en-GB", "es-ES", "es-MX", "fr-FR", "fr-CA", "de-DE", "de-AT", "ja-JP", "zh-CN", "zh-TW", "ko-KR", "pt-BR", "pt-PT", "it-IT", "ru-RU", "ar-SA", "hi-IN", "nl-NL", "pl-PL"];
+      const namespaces = ["common", "errors", "validation", "navigation", "forms", "buttons", "labels", "messages", "notifications", "tooltips"];
+      for (const locale of locales) {
+        i18nSystem.locales[locale] = {
+          code: locale,
+          language: locale.split("-")[0],
+          region: locale.split("-")[1],
+          direction: locale.startsWith("ar") || locale.startsWith("he") ? "rtl" : "ltr",
+          numberFormat: { decimal: locale.includes("DE") ? "," : ".", thousands: locale.includes("DE") ? "." : ",", currency: locale.includes("US") ? "$" : "\u20AC" },
+          dateFormat: { short: locale.includes("US") ? "MM/DD/YYYY" : "DD/MM/YYYY", long: "MMMM D, YYYY", time: locale.includes("US") ? "h:mm A" : "HH:mm" },
+          pluralRules: { zero: 0, one: 1, two: 2, few: [3, 4], many: [5, 10], other: "default" }
+        };
+        i18nSystem.formatters[locale] = {
+          number: (value, options = {}) => new Intl.NumberFormat(locale, options).format(value),
+          currency: (value, currency = "USD") => new Intl.NumberFormat(locale, { style: "currency", currency }).format(value),
+          date: (value, options = {}) => new Intl.DateTimeFormat(locale, options).format(value),
+          relativeTime: (value, unit) => new Intl.RelativeTimeFormat(locale).format(value, unit),
+          list: (values, options = {}) => new Intl.ListFormat(locale, options).format(values),
+          plural: (value) => new Intl.PluralRules(locale).select(value)
+        };
+        i18nSystem.translations[locale] = {};
+        for (const namespace of namespaces) {
+          i18nSystem.translations[locale][namespace] = {};
+          for (let keyIndex = 0; keyIndex < 50; keyIndex++) {
+            const key = `${namespace}.key_${keyIndex}`;
+            i18nSystem.translations[locale][namespace][`key_${keyIndex}`] = {
+              value: `[${locale}] ${namespace} translation ${keyIndex}`,
+              description: `Translation for ${key}`,
+              context: namespace,
+              maxLength: 100,
+              placeholders: keyIndex % 3 === 0 ? ["{name}", "{count}"] : [],
+              plural: keyIndex % 5 === 0 ? { one: "item", other: "items" } : null,
+              gender: keyIndex % 7 === 0 ? { male: "his", female: "her", neutral: "their" } : null,
+              lastUpdated: Date.now() - keyIndex * 36e5,
+              verified: keyIndex % 2 === 0,
+              automated: keyIndex % 4 === 0
+            };
+          }
+        }
+      }
+      const t = (key, locale = "en-US", params = {}) => {
+        const parts = key.split(".");
+        const namespace = parts[0];
+        const translationKey = parts.slice(1).join(".");
+        const translation = i18nSystem.translations[locale]?.[namespace]?.[translationKey];
+        if (!translation) return key;
+        let value = translation.value;
+        for (const param in params) {
+          value = value.replace(`{${param}}`, params[param]);
+        }
+        return value;
+      };
+      i18nSystem.t = t;
+      i18nSystem.getLocales = () => locales;
+      i18nSystem.getNamespaces = () => namespaces;
+      i18nSystem.hasTranslation = (key, locale) => Boolean(i18nSystem.translations[locale]?.[key.split(".")[0]]?.[key.split(".").slice(1).join(".")]);
+      window.__deepNestI18n = i18nSystem;
+    }, [depth]);
     if (depth <= 0) return /* @__PURE__ */ import_react.default.createElement(import_react.default.Fragment, null, children);
     return /* @__PURE__ */ import_react.default.createElement("div", { style: { display: "contents" } }, /* @__PURE__ */ import_react.default.createElement("span", { style: { display: "contents" } }, /* @__PURE__ */ import_react.default.createElement(DeepNest, { depth: depth - 1 }, children)));
   }
@@ -16379,11 +16763,12 @@
       )), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-apps-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(AppsIcon, { width: 16, height: 16 }) }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-notifications", icon: /* @__PURE__ */ import_react3.default.createElement(NotificationsIcon, { width: 16, height: 16 }), notification: true }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-settings-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(SettingsIcon, { width: 16, height: 16 }) }), /* @__PURE__ */ import_react3.default.createElement(ToolbarButton, { testId: "chrome-help-menu-trigger", icon: /* @__PURE__ */ import_react3.default.createElement(HelpIcon, { width: 16, height: 16 }) }))
     ))));
   }
-  function Chrome() {
+  function Chrome({ renderCounter = 0 }) {
     return /* @__PURE__ */ import_react3.default.createElement(ChromeOuter, null, /* @__PURE__ */ import_react3.default.createElement(ChromeContainer, null, /* @__PURE__ */ import_react3.default.createElement(ChromeWrapper, null, /* @__PURE__ */ import_react3.default.createElement(ChromeInner, null, /* @__PURE__ */ import_react3.default.createElement(
       ChromeLayout,
       {
         "data-testid": "default-chrome",
+        "data-render-counter": renderCounter,
         style: {
           position: "fixed",
           top: 0,
@@ -16397,9 +16782,10 @@
           zIndex: 200
         }
       },
-      /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react3.default.createElement("div", { style: { flex: 1, padding: "16px 8px", overflowY: "auto" } }, /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 2 }, /* @__PURE__ */ import_react3.default.createElement(AccountSwitcher, null), /* @__PURE__ */ import_react3.default.createElement(PrimaryNav, null), /* @__PURE__ */ import_react3.default.createElement(ShortcutsNav, null), /* @__PURE__ */ import_react3.default.createElement(WorkloadsNav, null), /* @__PURE__ */ import_react3.default.createElement(DeveloperNav, null))))
+      /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react3.default.createElement("div", { style: { flex: 1, padding: "16px 8px", overflowY: "auto" } }, /* @__PURE__ */ import_react3.default.createElement(DeepNest, { depth: 2 }, /* @__PURE__ */ import_react3.default.createElement(AccountSwitcher, null), /* @__PURE__ */ import_react3.default.createElement(PrimaryNav, null), /* @__PURE__ */ import_react3.default.createElement(ShortcutsNav, null), /* @__PURE__ */ import_react3.default.createElement(WorkloadsNav, null), /* @__PURE__ */ import_react3.default.createElement(DeveloperNav, null)), /* @__PURE__ */ import_react3.default.createElement("div", { "data-chrome-render": renderCounter, style: { display: "none" } }, "Render: ", renderCounter)))
     ), /* @__PURE__ */ import_react3.default.createElement(ChromeHeaderToolbar, null)))));
   }
+  var Chrome_default = (0, import_react3.memo)(Chrome);
 
   // src/components/CustomerDetailsPage.jsx
   var import_react5 = __toESM(require_react());
@@ -16950,13 +17336,15 @@
     ];
     return /* @__PURE__ */ import_react5.default.createElement(import_react5.default.Fragment, null, modals.map((id) => /* @__PURE__ */ import_react5.default.createElement(DeepNest, { key: id, depth: 3 }, /* @__PURE__ */ import_react5.default.createElement("div", { "data-testid": id }))));
   }
-  function CustomerDetailsPage({ customer, subscriptions, payments, invoices }) {
+  function CustomerDetailsPage({ customer, subscriptions, payments, invoices, renderCounter = 0 }) {
     return /* @__PURE__ */ import_react5.default.createElement(PageOuter, null, /* @__PURE__ */ import_react5.default.createElement(PageContainer, null, /* @__PURE__ */ import_react5.default.createElement(PageWrapper, null, /* @__PURE__ */ import_react5.default.createElement(PageInner, null, /* @__PURE__ */ import_react5.default.createElement(
       PageLayout,
       {
         "data-testid": "product-boundary-customer-details-page",
+        "data-render-counter": renderCounter,
         style: { paddingTop: "60px" }
       },
+      /* @__PURE__ */ import_react5.default.createElement("div", { "data-content-render": renderCounter, style: { display: "none" } }, "Render: ", renderCounter),
       /* @__PURE__ */ import_react5.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react5.default.createElement(CustomerHeader, { customer })),
       /* @__PURE__ */ import_react5.default.createElement(
         "div",
@@ -16976,6 +17364,7 @@
       /* @__PURE__ */ import_react5.default.createElement(ModalPlaceholders, null)
     )))));
   }
+  var CustomerDetailsPage_default = (0, import_react5.memo)(CustomerDetailsPage);
 
   // src/components/Workbench.jsx
   var import_react6 = __toESM(require_react());
@@ -17575,6 +17964,7 @@
       /* @__PURE__ */ import_react6.default.createElement("div", { "data-testid": "wb-Inspector-FollowPreferenceSwitch", style: { display: "none" } })
     );
   }
+  var Workbench_default = (0, import_react6.memo)(Workbench);
 
   // src/App.jsx
   var baseCustomerData = {
@@ -17639,13 +18029,13 @@
   function WorldRootLayout({ children }) {
     return /* @__PURE__ */ import_react7.default.createElement("div", { "data-testid": "world-root" }, children);
   }
-  function ControlPanel({ onRerenderAll, onRerenderContent, onRerenderChrome, onToggleTheme, theme, renderCount }) {
+  function ControlPanel({ onRemountAll, onRerenderAll, onRerenderContent, onRerenderChrome }) {
     return /* @__PURE__ */ import_react7.default.createElement("div", { style: {
       position: "fixed",
       top: 0,
       left: 0,
       right: 0,
-      backgroundColor: theme === "dark" ? "#1a1f36" : "#635bff",
+      backgroundColor: "#635bff",
       color: "#fff",
       padding: "8px 16px",
       display: "flex",
@@ -17654,11 +18044,11 @@
       zIndex: 1e4,
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       fontSize: "13px"
-    } }, /* @__PURE__ */ import_react7.default.createElement("span", { style: { fontWeight: 600 } }, "Re-render Controls:"), /* @__PURE__ */ import_react7.default.createElement(
+    } }, /* @__PURE__ */ import_react7.default.createElement("span", { style: { fontWeight: 600 } }, "Controls:"), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
-        "data-testid": "rerender-all-btn",
-        onClick: onRerenderAll,
+        "data-testid": "remount-all-btn",
+        onClick: onRemountAll,
         style: {
           backgroundColor: "#fff",
           color: "#635bff",
@@ -17669,7 +18059,23 @@
           fontWeight: 500
         }
       },
-      "Re-render ALL"
+      "Remount ALL"
+    ), /* @__PURE__ */ import_react7.default.createElement(
+      "button",
+      {
+        "data-testid": "rerender-all-btn",
+        onClick: onRerenderAll,
+        style: {
+          backgroundColor: "rgba(255,255,255,0.2)",
+          color: "#fff",
+          border: "1px solid rgba(255,255,255,0.3)",
+          padding: "6px 12px",
+          borderRadius: "4px",
+          cursor: "pointer",
+          fontWeight: 500
+        }
+      },
+      "Rerender All"
     ), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
@@ -17685,7 +18091,7 @@
           fontWeight: 500
         }
       },
-      "Re-render Content"
+      "Rerender Content"
     ), /* @__PURE__ */ import_react7.default.createElement(
       "button",
       {
@@ -17701,79 +18107,54 @@
           fontWeight: 500
         }
       },
-      "Re-render Chrome"
-    ), /* @__PURE__ */ import_react7.default.createElement(
-      "button",
-      {
-        "data-testid": "toggle-theme-btn",
-        onClick: onToggleTheme,
-        style: {
-          backgroundColor: "rgba(255,255,255,0.2)",
-          color: "#fff",
-          border: "1px solid rgba(255,255,255,0.3)",
-          padding: "6px 12px",
-          borderRadius: "4px",
-          cursor: "pointer",
-          fontWeight: 500
-        }
-      },
-      "Toggle Theme"
-    ), /* @__PURE__ */ import_react7.default.createElement("span", { style: { marginLeft: "auto", opacity: 0.8 } }, "Render count: ", renderCount));
+      "Rerender Chrome"
+    ));
   }
   function App() {
     const [globalKey, setGlobalKey] = (0, import_react7.useState)(0);
-    const [contentKey, setContentKey] = (0, import_react7.useState)(0);
-    const [chromeKey, setChromeKey] = (0, import_react7.useState)(0);
-    const [theme, setTheme] = (0, import_react7.useState)("light");
-    const [renderCount, setRenderCount] = (0, import_react7.useState)(0);
-    const customerData = {
+    const [localCounter, setLocalCounter] = (0, import_react7.useState)(0);
+    const [chromeCounter, setChromeCounter] = (0, import_react7.useState)(0);
+    const [contentCounter, setContentCounter] = (0, import_react7.useState)(0);
+    const customerData = (0, import_react7.useMemo)(() => ({
       ...baseCustomerData,
-      _renderKey: contentKey,
-      _theme: theme
-    };
-    const handleRerenderAll = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering FULL app re-render...");
+      _renderCounter: contentCounter
+    }), [contentCounter]);
+    const handleRemountAll = (0, import_react7.useCallback)(() => {
+      console.log("\u{1F504} Triggering FULL app REMOUNT (unmount + mount)...");
       setGlobalKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+    }, []);
+    const handleRerenderAll = (0, import_react7.useCallback)(() => {
+      console.log("\u{1F504} Triggering App rerender (diff only, no DOM changes)...");
+      setLocalCounter((c) => c + 1);
     }, []);
     const handleRerenderContent = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering CONTENT area re-render...");
-      setContentKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+      console.log("\u{1F504} Triggering CONTENT rerender (with DOM changes)...");
+      setContentCounter((c) => c + 1);
     }, []);
     const handleRerenderChrome = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering CHROME re-render...");
-      setChromeKey((k) => k + 1);
-      setRenderCount((c) => c + 1);
+      console.log("\u{1F504} Triggering CHROME rerender (with DOM changes)...");
+      setChromeCounter((c) => c + 1);
     }, []);
-    const handleToggleTheme = (0, import_react7.useCallback)(() => {
-      console.log("\u{1F504} Triggering THEME toggle (full re-render)...");
-      setTheme((t) => t === "light" ? "dark" : "light");
-      setRenderCount((c) => c + 1);
-    }, []);
-    const bgColor = theme === "dark" ? "#0a0e1a" : "#f6f8fa";
     return /* @__PURE__ */ import_react7.default.createElement(AppOuter, { key: globalKey }, /* @__PURE__ */ import_react7.default.createElement(AppContainer, null, /* @__PURE__ */ import_react7.default.createElement(AppWrapper, null, /* @__PURE__ */ import_react7.default.createElement(AppInner, null, /* @__PURE__ */ import_react7.default.createElement(
       ControlPanel,
       {
+        onRemountAll: handleRemountAll,
         onRerenderAll: handleRerenderAll,
         onRerenderContent: handleRerenderContent,
-        onRerenderChrome: handleRerenderChrome,
-        onToggleTheme: handleToggleTheme,
-        theme,
-        renderCount
+        onRerenderChrome: handleRerenderChrome
       }
     ), /* @__PURE__ */ import_react7.default.createElement(AppLayout, { style: {
       display: "flex",
       minHeight: "100vh",
-      backgroundColor: bgColor,
+      backgroundColor: "#f6f8fa",
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
       paddingTop: "44px"
       // Account for fixed control panel
-    } }, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Chrome, { key: chromeKey, theme })), /* @__PURE__ */ import_react7.default.createElement(MainContentOuter, null, /* @__PURE__ */ import_react7.default.createElement(MainContentContainer, null, /* @__PURE__ */ import_react7.default.createElement(MainContentWrapper, null, /* @__PURE__ */ import_react7.default.createElement(MainContentInner, null, /* @__PURE__ */ import_react7.default.createElement(MainContentLayout, { style: {
+    } }, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Chrome_default, { renderCounter: chromeCounter })), /* @__PURE__ */ import_react7.default.createElement(MainContentOuter, null, /* @__PURE__ */ import_react7.default.createElement(MainContentContainer, null, /* @__PURE__ */ import_react7.default.createElement(MainContentWrapper, null, /* @__PURE__ */ import_react7.default.createElement(MainContentInner, null, /* @__PURE__ */ import_react7.default.createElement(MainContentLayout, { style: {
       flex: 1,
       marginLeft: "240px",
       paddingBottom: "300px"
-    } }, /* @__PURE__ */ import_react7.default.createElement(WorldRootOuter, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootContainer, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootWrapper, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootInner, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootLayout, null, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(CustomerDetailsPage, { key: contentKey, customer: customerData, theme })))))))))))), /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Workbench, { customerId: customerData.id, theme })))))));
+    } }, /* @__PURE__ */ import_react7.default.createElement(WorldRootOuter, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootContainer, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootWrapper, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootInner, null, /* @__PURE__ */ import_react7.default.createElement(WorldRootLayout, null, /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(CustomerDetailsPage_default, { customer: customerData, renderCounter: contentCounter })))))))))))), /* @__PURE__ */ import_react7.default.createElement(DeepNest, { depth: 3 }, /* @__PURE__ */ import_react7.default.createElement(Workbench_default, { customerId: customerData.id })))))));
   }
 
   // src/index.jsx

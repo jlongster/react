@@ -9,8 +9,23 @@
 
 // Debug timing instrumentation for React lifecycle phases
 
-// Set to true to enable debug logging
+// ============================================================================
+// TIMING OUTPUT CONTROLS
+// Set these to true/false to control what gets logged
+// ============================================================================
+
+// Master switch - if false, disables ALL timing output
 const DEBUG_TIMING_ENABLED = true;
+
+// Individual feature toggles (only apply when DEBUG_TIMING_ENABLED is true)
+const LOG_RENDER_PHASES = true;        // Render START/COMPLETE messages
+const LOG_COMMIT_PHASES = true;        // Commit START/COMPLETE messages
+const LOG_PASSIVE_EFFECTS = true;      // Passive effects (useEffect) timing
+const LOG_UPDATE_LIFECYCLE = true;     // Update scheduled/rendering/committed
+const LOG_UPDATE_INTERRUPTS = true;    // Yields, suspends, interrupts
+const LOG_TIMING_SUMMARY = true;       // Summary block after each commit
+const LOG_COMPONENT_COUNTS = false;     // Per-component render counts in summary
+const LOG_LANE_INFO = false;            // Lane bitmask details
 
 // ============================================================================
 // RENDER/COMMIT TRACKING (existing)
@@ -27,7 +42,7 @@ let hasPendingPassiveEffects = false;
 export function logRenderStart(isSync: boolean): void {
   renderCount++;
   currentRenderStart = performance.now();
-  if (!DEBUG_TIMING_ENABLED) return;
+  if (!DEBUG_TIMING_ENABLED || !LOG_RENDER_PHASES) return;
   console.log(
     `%c[React Timing] Render #${renderCount} START ${isSync ? '(sync)' : '(concurrent)'}`,
     'color: #61dafb; font-weight: bold;'
@@ -35,7 +50,7 @@ export function logRenderStart(isSync: boolean): void {
 }
 
 export function logRenderComplete(): void {
-  if (!DEBUG_TIMING_ENABLED) return;
+  if (!DEBUG_TIMING_ENABLED || !LOG_RENDER_PHASES) return;
   const duration = performance.now() - currentRenderStart;
   console.log(
     `%c[React Timing] Render #${renderCount} COMPLETE: ${duration.toFixed(2)}ms`,
@@ -45,7 +60,7 @@ export function logRenderComplete(): void {
 
 export function logCommitStart(): void {
   currentCommitStart = performance.now();
-  if (!DEBUG_TIMING_ENABLED) return;
+  if (!DEBUG_TIMING_ENABLED || !LOG_COMMIT_PHASES) return;
   const phase = isInitialMount ? 'MOUNT' : 'UPDATE';
   console.log(
     `%c[React Timing] Commit #${renderCount} START (${phase})`,
@@ -58,32 +73,29 @@ export function logCommitComplete(hasPassiveEffects: boolean): void {
   const wasInitialMount = isInitialMount;
   isInitialMount = false;
   currentCommitEnd = performance.now();
-  hasPendingPassiveEffects = hasPassiveEffects;
+  hasPendingPassiveEffects = false; // Will be set true when passive effects actually start
 
   if (!DEBUG_TIMING_ENABLED) return;
 
   const phase = wasInitialMount ? 'MOUNT' : 'UPDATE';
 
-  console.log(
-    `%c[React Timing] Commit #${renderCount} COMPLETE (${phase})`,
-    'color: #f0db4f;'
-  );
-
-  // If there are passive effects, wait for them before printing summary
-  if (hasPassiveEffects) {
+  if (LOG_COMMIT_PHASES) {
     console.log(
-      `%c[React Timing] Passive effects pending...`,
-      'color: #ff9800; font-style: italic;'
+      `%c[React Timing] Commit #${renderCount} COMPLETE (${phase})`,
+      'color: #f0db4f;'
     );
-  } else {
-    // No passive effects, print summary now
-    printTimingSummary(wasInitialMount ? 'MOUNT' : 'UPDATE', 0);
+  }
+
+  // Always print summary now - passive effects will print separately if they run
+  if (LOG_TIMING_SUMMARY) {
+    printTimingSummary(phase, 0);
   }
 }
 
 export function logPassiveEffectsStart(): void {
   currentPassiveEffectsStart = performance.now();
-  if (!DEBUG_TIMING_ENABLED) return;
+  hasPendingPassiveEffects = true;
+  if (!DEBUG_TIMING_ENABLED || !LOG_PASSIVE_EFFECTS) return;
   console.log(
     `%c[React Timing] Passive Effects #${renderCount} START`,
     'color: #ff9800; font-weight: bold;'
@@ -91,20 +103,19 @@ export function logPassiveEffectsStart(): void {
 }
 
 export function logPassiveEffectsComplete(): void {
-  if (!DEBUG_TIMING_ENABLED) return;
-
   const passiveEffectsDuration = performance.now() - currentPassiveEffectsStart;
+  hasPendingPassiveEffects = false;
+
+  if (!DEBUG_TIMING_ENABLED || !LOG_PASSIVE_EFFECTS) return;
 
   console.log(
     `%c[React Timing] Passive Effects #${renderCount} COMPLETE: ${passiveEffectsDuration.toFixed(2)}ms`,
     'color: #ff9800;'
   );
-
-  // Now print the full summary including passive effects
-  if (hasPendingPassiveEffects) {
-    printTimingSummary(isInitialMount ? 'UPDATE' : 'UPDATE', passiveEffectsDuration);
-    hasPendingPassiveEffects = false;
-  }
+  console.log(
+    `%c[React Timing] ─────────────────────────────────`,
+    'color: #888;'
+  );
 }
 
 function printTimingSummary(phase: string, passiveEffectsDuration: number): void {
@@ -243,7 +254,7 @@ export function logUpdateScheduled(lanes: number): number {
       info.lanes = info.lanes | lanes;
       info.priority = getLanePriorityName(info.lanes);
 
-      if (DEBUG_TIMING_ENABLED) {
+      if (DEBUG_TIMING_ENABLED && LOG_UPDATE_LIFECYCLE) {
         console.log(
           `%c[Update #${existingId}] BATCHED %c(merged with existing scheduled update)`,
           'color: #9c27b0;',
@@ -271,16 +282,18 @@ export function logUpdateScheduled(lanes: number): number {
 
   activeUpdates.set(id, info);
 
-  if (DEBUG_TIMING_ENABLED) {
+  if (DEBUG_TIMING_ENABLED && LOG_UPDATE_LIFECYCLE) {
     console.log(
       `%c[Update #${id}] SCHEDULED %c${priority}`,
       'color: #9c27b0; font-weight: bold;',
       'color: #e91e63; font-weight: bold;'
     );
-    console.log(
-      `%c[Update #${id}]   lanes: 0b${lanes.toString(2).padStart(31, '0')}`,
-      'color: #9c27b0;'
-    );
+    if (LOG_LANE_INFO) {
+      console.log(
+        `%c[Update #${id}]   lanes: 0b${lanes.toString(2).padStart(31, '0')}`,
+        'color: #9c27b0;'
+      );
+    }
   }
 
   return id;
@@ -321,7 +334,7 @@ export function logUpdateRenderStart(lanes: number): void {
 
   update.status = 'rendering';
 
-  if (DEBUG_TIMING_ENABLED) {
+  if (DEBUG_TIMING_ENABLED && LOG_UPDATE_LIFECYCLE) {
     console.log(
       `%c[Update #${update.id}] RENDER_START %c${update.priority}`,
       'color: #2196f3; font-weight: bold;',
@@ -337,7 +350,7 @@ export function logUpdateInterrupted(lanes: number, newLanes: number): void {
     update.interruptCount++;
     update.status = 'scheduled'; // Back to scheduled, will be retried
 
-    if (DEBUG_TIMING_ENABLED) {
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       console.log(
         `%c[Update #${update.id}] INTERRUPTED %c(preempted by higher priority)`,
         'color: #ff5722; font-weight: bold;',
@@ -366,7 +379,7 @@ export function logUpdateYielded(lanes: number): void {
     update.yieldCount++;
     update.status = 'yielded';
 
-    if (DEBUG_TIMING_ENABLED) {
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       console.log(
         `%c[Update #${update.id}] YIELDED %c(giving control to main thread)`,
         'color: #ff9800; font-weight: bold;',
@@ -386,7 +399,7 @@ export function logUpdateResumed(lanes: number): void {
   if (update) {
     update.status = 'rendering';
 
-    if (DEBUG_TIMING_ENABLED) {
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       console.log(
         `%c[Update #${update.id}] RESUMED %c(continuing render)`,
         'color: #4caf50; font-weight: bold;',
@@ -403,7 +416,7 @@ export function logUpdateSuspended(lanes: number, reason: SuspendedReason): void
     update.suspendCount++;
     update.status = 'suspended';
 
-    if (DEBUG_TIMING_ENABLED) {
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       const reasonName = getSuspendedReasonName(reason);
 
       console.log(
@@ -425,7 +438,7 @@ export function logUpdateSuspended(lanes: number, reason: SuspendedReason): void
 
 // Called when a suspended render is pinged (data arrived)
 export function logUpdatePinged(lanes: number): void {
-  if (!DEBUG_TIMING_ENABLED) return;
+  if (!DEBUG_TIMING_ENABLED || !LOG_UPDATE_INTERRUPTS) return;
   const update = findUpdateByLanes(lanes);
   if (update) {
     console.log(
@@ -442,7 +455,7 @@ export function logUpdateCommitted(lanes: number): void {
   if (update) {
     update.status = 'committed';
 
-    if (DEBUG_TIMING_ENABLED) {
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_LIFECYCLE) {
       const duration = performance.now() - update.startTime;
 
       console.log(
@@ -478,8 +491,10 @@ export function logUpdateCommitted(lanes: number): void {
         'color: #4caf50;'
       );
 
-      // Log component render counts
-      logComponentRenderSummary(update);
+      // Log component render counts (if enabled)
+      if (LOG_COMPONENT_COUNTS) {
+        logComponentRenderSummary(update);
+      }
 
       console.log(
         `%c[Update #${update.id}] ═══════════════════════════════════════`,
@@ -494,7 +509,7 @@ export function logUpdateCommitted(lanes: number): void {
 
 // Called when prepareFreshStack is called (indicates restart/rebase)
 export function logUpdateRestarted(oldLanes: number, newLanes: number): void {
-  if (!DEBUG_TIMING_ENABLED) return;
+  if (!DEBUG_TIMING_ENABLED || !LOG_UPDATE_INTERRUPTS) return;
   if (oldLanes !== 0 && oldLanes !== newLanes) {
     const oldUpdate = findUpdateByLanes(oldLanes);
     if (oldUpdate) {
@@ -502,14 +517,16 @@ export function logUpdateRestarted(oldLanes: number, newLanes: number): void {
         `%c[Update #${oldUpdate.id}] RESTARTED/REBASED`,
         'color: #ff5722; font-weight: bold;'
       );
-      console.log(
-        `%c[Update #${oldUpdate.id}]   old lanes: 0b${oldLanes.toString(2).padStart(31, '0')}`,
-        'color: #ff5722;'
-      );
-      console.log(
-        `%c[Update #${oldUpdate.id}]   new lanes: 0b${newLanes.toString(2).padStart(31, '0')}`,
-        'color: #ff5722;'
-      );
+      if (LOG_LANE_INFO) {
+        console.log(
+          `%c[Update #${oldUpdate.id}]   old lanes: 0b${oldLanes.toString(2).padStart(31, '0')}`,
+          'color: #ff5722;'
+        );
+        console.log(
+          `%c[Update #${oldUpdate.id}]   new lanes: 0b${newLanes.toString(2).padStart(31, '0')}`,
+          'color: #ff5722;'
+        );
+      }
     }
   }
 }
