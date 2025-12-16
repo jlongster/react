@@ -23,9 +23,10 @@ const LOG_COMMIT_PHASES = true;        // Commit START/COMPLETE messages
 const LOG_PASSIVE_EFFECTS = true;      // Passive effects (useEffect) timing
 const LOG_UPDATE_LIFECYCLE = true;     // Update scheduled/rendering/committed
 const LOG_UPDATE_INTERRUPTS = true;    // Yields, suspends, interrupts
+const LOG_SYNC_RUN_INFO = true;        // Per-sync-run component counts on yield/resume
 const LOG_TIMING_SUMMARY = true;       // Summary block after each commit
-const LOG_COMPONENT_COUNTS = false;     // Per-component render counts in summary
-const LOG_LANE_INFO = false;            // Lane bitmask details
+const LOG_COMPONENT_COUNTS = false;    // Per-component render counts in summary
+const LOG_LANE_INFO = false;           // Lane bitmask details
 
 // ============================================================================
 // RENDER/COMMIT TRACKING (existing)
@@ -196,7 +197,13 @@ type UpdateInfo = {
   suspendCount: number,
   yieldCount: number,
   interruptCount: number,
+  restartCount: number,
   componentRenderCounts: Map<string, number>,
+  // Sync run tracking
+  syncRunNumber: number,
+  currentSyncRunComponentCount: number,
+  totalComponentsRendered: number,
+  syncRunStartTime: number,
 };
 
 const activeUpdates: Map<number, UpdateInfo> = new Map();
@@ -277,7 +284,12 @@ export function logUpdateScheduled(lanes: number): number {
     suspendCount: 0,
     yieldCount: 0,
     interruptCount: 0,
+    restartCount: 0,
     componentRenderCounts: new Map(),
+    syncRunNumber: 0,
+    currentSyncRunComponentCount: 0,
+    totalComponentsRendered: 0,
+    syncRunStartTime: 0,
   };
 
   activeUpdates.set(id, info);
@@ -326,17 +338,27 @@ export function logUpdateRenderStart(lanes: number): void {
       suspendCount: 0,
       yieldCount: 0,
       interruptCount: 0,
+      restartCount: 0,
       componentRenderCounts: new Map(),
+      syncRunNumber: 0,
+      currentSyncRunComponentCount: 0,
+      totalComponentsRendered: 0,
+      syncRunStartTime: 0,
     };
     activeUpdates.set(id, update);
     currentUpdateId = id;
   }
 
+  // Start a new sync run
+  update.syncRunNumber++;
+  update.currentSyncRunComponentCount = 0;
+  update.syncRunStartTime = performance.now();
   update.status = 'rendering';
 
   if (DEBUG_TIMING_ENABLED && LOG_UPDATE_LIFECYCLE) {
+    const runInfo = update.syncRunNumber > 1 ? ` (sync run #${update.syncRunNumber})` : '';
     console.log(
-      `%c[Update #${update.id}] RENDER_START %c${update.priority}`,
+      `%c[Update #${update.id}] RENDER_START %c${update.priority}${runInfo}`,
       'color: #2196f3; font-weight: bold;',
       'color: #e91e63;'
     );
@@ -378,6 +400,7 @@ export function logUpdateYielded(lanes: number): void {
   if (update) {
     update.yieldCount++;
     update.status = 'yielded';
+    const syncRunDuration = performance.now() - update.syncRunStartTime;
 
     if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       console.log(
@@ -385,6 +408,16 @@ export function logUpdateYielded(lanes: number): void {
         'color: #ff9800; font-weight: bold;',
         'color: #ffc107;'
       );
+      if (LOG_SYNC_RUN_INFO) {
+        console.log(
+          `%c[Update #${update.id}]   sync run #${update.syncRunNumber}: ${update.currentSyncRunComponentCount} components in ${syncRunDuration.toFixed(2)}ms`,
+          'color: #ff9800;'
+        );
+        console.log(
+          `%c[Update #${update.id}]   total so far: ${update.totalComponentsRendered} components`,
+          'color: #ff9800;'
+        );
+      }
       console.log(
         `%c[Update #${update.id}]   yield count: ${update.yieldCount}`,
         'color: #ff9800;'
@@ -397,14 +430,24 @@ export function logUpdateYielded(lanes: number): void {
 export function logUpdateResumed(lanes: number): void {
   const update = findUpdateByLanes(lanes);
   if (update) {
+    // Start a new sync run (resuming, not restarting)
+    update.syncRunNumber++;
+    update.currentSyncRunComponentCount = 0;
+    update.syncRunStartTime = performance.now();
     update.status = 'rendering';
 
     if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
       console.log(
-        `%c[Update #${update.id}] RESUMED %c(continuing render)`,
+        `%c[Update #${update.id}] RESUMED %c(continuing render, sync run #${update.syncRunNumber})`,
         'color: #4caf50; font-weight: bold;',
         'color: #8bc34a;'
       );
+      if (LOG_SYNC_RUN_INFO) {
+        console.log(
+          `%c[Update #${update.id}]   progress: ${update.totalComponentsRendered} components rendered so far`,
+          'color: #4caf50;'
+        );
+      }
     }
   }
 }
@@ -490,6 +533,22 @@ export function logUpdateCommitted(lanes: number): void {
         `%c[Update #${update.id}]   Interrupts:  ${update.interruptCount}`,
         'color: #4caf50;'
       );
+      if (update.restartCount > 0) {
+        console.log(
+          `%c[Update #${update.id}]   Restarts:    ${update.restartCount}`,
+          'color: #ff5722;'
+        );
+      }
+      if (LOG_SYNC_RUN_INFO && update.syncRunNumber > 1) {
+        console.log(
+          `%c[Update #${update.id}]   Sync runs:   ${update.syncRunNumber}`,
+          'color: #4caf50;'
+        );
+        console.log(
+          `%c[Update #${update.id}]   Total components: ${update.totalComponentsRendered}`,
+          'color: #4caf50;'
+        );
+      }
 
       // Log component render counts (if enabled)
       if (LOG_COMPONENT_COUNTS) {
@@ -509,21 +568,43 @@ export function logUpdateCommitted(lanes: number): void {
 
 // Called when prepareFreshStack is called (indicates restart/rebase)
 export function logUpdateRestarted(oldLanes: number, newLanes: number): void {
-  if (!DEBUG_TIMING_ENABLED || !LOG_UPDATE_INTERRUPTS) return;
-  if (oldLanes !== 0 && oldLanes !== newLanes) {
-    const oldUpdate = findUpdateByLanes(oldLanes);
-    if (oldUpdate) {
-      console.log(
-        `%c[Update #${oldUpdate.id}] RESTARTED/REBASED`,
-        'color: #ff5722; font-weight: bold;'
-      );
-      if (LOG_LANE_INFO) {
+  const update = findUpdateByLanes(oldLanes) || findUpdateByLanes(newLanes);
+  if (update) {
+    const wasInProgress = update.totalComponentsRendered > 0;
+    update.restartCount++;
+
+    // Reset component counts since we're starting over
+    const lostProgress = update.totalComponentsRendered;
+    update.totalComponentsRendered = 0;
+    update.currentSyncRunComponentCount = 0;
+    update.syncRunNumber++;
+    update.syncRunStartTime = performance.now();
+
+    if (DEBUG_TIMING_ENABLED && LOG_UPDATE_INTERRUPTS) {
+      if (wasInProgress) {
         console.log(
-          `%c[Update #${oldUpdate.id}]   old lanes: 0b${oldLanes.toString(2).padStart(31, '0')}`,
+          `%c[Update #${update.id}] RESTARTED %c(starting over from scratch!)`,
+          'color: #ff5722; font-weight: bold;',
+          'color: #ff5722;'
+        );
+        if (LOG_SYNC_RUN_INFO) {
+          console.log(
+            `%c[Update #${update.id}]   discarded: ${lostProgress} components of work`,
+            'color: #ff5722;'
+          );
+          console.log(
+            `%c[Update #${update.id}]   restart count: ${update.restartCount}`,
+            'color: #ff5722;'
+          );
+        }
+      }
+      if (LOG_LANE_INFO && oldLanes !== 0 && oldLanes !== newLanes) {
+        console.log(
+          `%c[Update #${update.id}]   old lanes: 0b${oldLanes.toString(2).padStart(31, '0')}`,
           'color: #ff5722;'
         );
         console.log(
-          `%c[Update #${oldUpdate.id}]   new lanes: 0b${newLanes.toString(2).padStart(31, '0')}`,
+          `%c[Update #${update.id}]   new lanes: 0b${newLanes.toString(2).padStart(31, '0')}`,
           'color: #ff5722;'
         );
       }
@@ -575,6 +656,9 @@ export function logComponentRender(componentName: string | null): void {
     const name = componentName || 'Anonymous';
     const count = update.componentRenderCounts.get(name) || 0;
     update.componentRenderCounts.set(name, count + 1);
+    // Track sync run counts
+    update.currentSyncRunComponentCount++;
+    update.totalComponentsRendered++;
   }
 }
 

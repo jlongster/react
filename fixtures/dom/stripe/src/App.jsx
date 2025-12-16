@@ -195,7 +195,9 @@ export default function App() {
 
   const handleRerenderContent = useCallback(() => {
     console.log('🔄 Triggering CONTENT rerender (with DOM changes)...');
-    setContentCounter(c => c + 1);
+    React.startTransition(() => {
+      setContentCounter(c => c + 1);
+    })
   }, []);
 
   const handleRerenderChrome = useCallback(() => {

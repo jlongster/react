@@ -192,6 +192,13 @@ import getComponentNameFromType from 'shared/getComponentNameFromType';
 import isArray from 'shared/isArray';
 import {SuspenseException, getSuspendedThenable} from './ReactFizzThenable';
 
+import {
+  logServerRenderStart as debugLogServerRenderStart,
+  logServerRenderComplete as debugLogServerRenderComplete,
+  logComponentRender as debugLogComponentRender,
+  logChunkEmitted as debugLogChunkEmitted,
+} from './ReactFizzDebugTiming';
+
 // Linked list representing the identity of a component given the component/tag name and key.
 // The name might be minified but we assume that it's going to be the same generated name. Typically
 // because it's just the same compiled output in practice.
@@ -2380,6 +2387,7 @@ function renderClassComponent(
   Component: any,
   props: any,
 ): void {
+  debugLogComponentRender(getComponentNameFromType(Component));
   const resolvedProps = resolveClassComponentProps(Component, props);
   const maskedContext = !disableLegacyContext
     ? getMaskedContext(Component, task.legacyContext)
@@ -2415,6 +2423,7 @@ function renderFunctionComponent(
   Component: any,
   props: any,
 ): void {
+  debugLogComponentRender(getComponentNameFromType(Component));
   let legacyContext;
   if (!disableLegacyContext && !disableLegacyContextForFunctionComponents) {
     legacyContext = getMaskedContext(Component, task.legacyContext);
@@ -4734,6 +4743,7 @@ function completeShell(request: Request) {
 // transitioning to the next request stage and this transition can happen in multiple places in this
 // implementation.
 function completeAll(request: Request) {
+  debugLogServerRenderComplete();
   // During a render the shell must be complete if the entire request is finished
   // however during a Prerender it is possible that the shell is incomplete because
   // it postponed. We cannot use rootPendingTasks in the prerender case because
@@ -5925,6 +5935,7 @@ function flushCompletedQueues(
 }
 
 export function startWork(request: Request): void {
+  debugLogServerRenderStart();
   request.flushScheduled = request.destination !== null;
   // When prerendering we use microtasks for pinging work
   if (supportsRequestStorage) {
